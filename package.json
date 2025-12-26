@@ -1,0 +1,60 @@
+{
+  "name": "@sendto/llm-share",
+  "version": "1.0.0",
+  "description": "Drop-in JavaScript widget for sending pages to LLMs",
+  "type": "module",
+  "main": "./dist/widget.umd.js",
+  "module": "./dist/widget.esm.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/widget.esm.js",
+      "require": "./dist/widget.umd.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./loader": "./dist/loader.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:widget\" \"npm run dev:loader\"",
+    "dev:widget": "vite build --watch --config vite.dev.config.ts",
+    "dev:loader": "vite build --watch --config vite.loader.dev.config.ts",
+    "build": "npm run build:widget && npm run build:loader",
+    "build:widget": "vite build",
+    "build:loader": "vite build --config vite.loader.config.ts",
+    "preview": "vite preview",
+    "serve": "python3 -m http.server 8000 || python -m SimpleHTTPServer 8000",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext ts,tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+  },
+  "keywords": [
+    "llm",
+    "share",
+    "widget",
+    "chatgpt",
+    "claude",
+    "gemini"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "jsdom": "^23.0.1",
+    "prettier": "^3.1.0",
+    "terser": "^5.44.1",
+    "typescript": "^5.3.2",
+    "vite": "^5.0.4",
+    "vite-plugin-dts": "^3.6.3",
+    "vitest": "^1.0.4"
+  }
+}
