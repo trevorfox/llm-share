@@ -16,7 +16,7 @@ export function validateConfig(
 
   // Validate mode if provided
   if (configObj.mode) {
-    const validModes = ['hosted', 'self_hosted', 'offline'];
+    const validModes = ['hosted', 'self_hosted', 'standalone'];
     if (!validModes.includes(configObj.mode)) {
       throw new Error(
         `Invalid mode: ${configObj.mode}. Must be one of: ${validModes.join(', ')}`

@@ -11,7 +11,7 @@ A drop-in JavaScript widget that adds a customizable "send this page to an LLM" 
 - 📋 **Copy-to-clipboard** - Ready-to-use prompts copied to clipboard
 - 🔗 **Link masking** - Optional share endpoint integration for masked links
 - 📊 **Event tracking** - Privacy-respecting analytics with batching
-- 🔧 **Three modes** - Hosted (SaaS), self-hosted, or offline
+- 🔧 **Three modes** - Hosted (SaaS), self-hosted, or standalone
 - 🎯 **WordPress-ready** - Designed for easy plugin integration
 
 ## Installation
@@ -45,7 +45,7 @@ npm install @sendto/llm-share
 import { init } from '@sendto/llm-share';
 
 init({
-  mode: "offline",
+  mode: "standalone",
   // ... config
 });
 ```
@@ -70,9 +70,9 @@ window.LLMShare = {
 ```javascript
 window.LLMShare = {
   version: "1",
-  siteId: "pub_123",           // Optional in offline mode
-  publicKey: "pk_abc",         // Optional in offline mode
-  mode: "hosted",              // hosted | self_hosted | offline
+  siteId: "pub_123",           // Optional in standalone mode
+  publicKey: "pk_abc",         // Optional in standalone mode
+  mode: "hosted",              // hosted | self_hosted | standalone
   
   endpoints: {
     collector: "https://c.domain.com/v1/events",  // Optional
@@ -130,7 +130,7 @@ All config options have smart defaults. You can provide a minimal config:
 
 ```javascript
 window.LLMShare = {
-  mode: "offline"
+  mode: "standalone"
   // Widget will use defaults for everything else
 };
 ```

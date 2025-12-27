@@ -6,7 +6,7 @@ import type { LLMShareEvent } from './events/types';
 import type { Widget } from './ui/Widget';
 import type { EventTracker } from './events/tracker';
 
-export type WidgetMode = 'hosted' | 'self_hosted' | 'offline';
+export type WidgetMode = 'hosted' | 'self_hosted' | 'standalone';
 export type WidgetPlacement = 'center-right' | 'center-left' | 'bottom-right' | 'bottom-left' | 'inline';
 export type WidgetStyle = 'pill' | 'square' | 'minimal' | 'custom';
 export type WidgetTheme = 'auto' | 'light' | 'dark';

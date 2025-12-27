@@ -4,20 +4,20 @@ import type { LLMShareConfig } from '../src/config/types';
 
 describe('Config Validation', () => {
   describe('Smart Defaults', () => {
-    it('should apply all smart defaults for offline mode', () => {
+    it('should apply all smart defaults for standalone mode', () => {
       const config: LLMShareConfig = {
-        mode: 'offline',
+        mode: 'standalone',
       };
       
       const normalized = validateConfig(config);
       
       // Mode defaults
-      expect(normalized.mode).toBe('offline');
+      expect(normalized.mode).toBe('standalone');
       expect(normalized.version).toBe('1');
       expect(normalized.siteId).toBeNull();
       expect(normalized.publicKey).toBeNull();
       
-      // Endpoint defaults (null for offline)
+      // Endpoint defaults (null for standalone)
       expect(normalized.endpoints.collector).toBeNull();
       expect(normalized.endpoints.share).toBeNull();
       expect(normalized.endpoints.redirectBase).toBeNull();
@@ -57,7 +57,7 @@ describe('Config Validation', () => {
       expect(normalized.llms[2].action).toBe('link');
       expect(normalized.llms[3].action).toBe('copy');
       
-      // Tracking defaults (disabled for offline mode)
+      // Tracking defaults (disabled for standalone mode)
       expect(normalized.tracking.enabled).toBe(false);
       expect(normalized.tracking.batch).toBe(true);
       expect(normalized.tracking.flushIntervalMs).toBe(8000);
@@ -270,9 +270,9 @@ describe('Config Validation', () => {
       expect(normalized.tracking.enabled).toBe(true);
     });
 
-    it('should disable tracking by default in offline mode', () => {
+    it('should disable tracking by default in standalone mode', () => {
       const config: LLMShareConfig = {
-        mode: 'offline',
+        mode: 'standalone',
       };
       
       const normalized = validateConfig(config);

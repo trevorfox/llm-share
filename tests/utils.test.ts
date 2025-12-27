@@ -51,7 +51,7 @@ describe('Utils', () => {
 
     it('should compose prompt with URL only', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: false,
@@ -68,7 +68,7 @@ describe('Utils', () => {
 
     it('should include page title when enabled', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: true,
@@ -84,7 +84,7 @@ describe('Utils', () => {
 
     it('should include selected text when enabled and present', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: false,
@@ -104,7 +104,7 @@ describe('Utils', () => {
 
     it('should include both page title and selected text when both enabled', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: true,
@@ -137,7 +137,7 @@ describe('Utils', () => {
       });
 
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: false,
@@ -159,7 +159,7 @@ describe('Utils', () => {
       });
 
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: false,
@@ -182,7 +182,7 @@ describe('Utils', () => {
       });
 
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: false,
@@ -196,7 +196,7 @@ describe('Utils', () => {
 
     it('should use default prompt when not specified', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           includePageTitle: false,
           includeSelectedText: false,
@@ -215,7 +215,7 @@ describe('Utils', () => {
       });
       
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: true,
@@ -231,7 +231,7 @@ describe('Utils', () => {
 
     it('should format prompt with proper line breaks', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: true,
@@ -259,7 +259,7 @@ describe('Utils', () => {
       });
 
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: 'Test prompt',
           includePageTitle: false,
@@ -275,7 +275,7 @@ describe('Utils', () => {
 
     it('should handle empty prompt string', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: '', // Empty string should be treated as falsy
           includePageTitle: false,
@@ -294,7 +294,7 @@ describe('Utils', () => {
 
     it('should always include URL even when prompt is empty', () => {
       const config = applyDefaults({
-        mode: 'offline',
+        mode: 'standalone',
         content: {
           prompt: '',
           includePageTitle: false,

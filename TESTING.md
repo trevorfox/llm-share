@@ -105,7 +105,7 @@ describe('My Feature', () => {
 - [ ] `onEvent` callback receives events
 
 #### Edge Cases
-- [ ] Works without endpoints (offline mode)
+- [ ] Works without endpoints (standalone mode)
 - [ ] Works with invalid config (graceful fallback)
 - [ ] Works on mobile viewport
 - [ ] Works with browser back/forward navigation
@@ -160,9 +160,9 @@ npm run build
 Edit `test.html` to test different configurations:
 
 ```javascript
-// Test offline mode
+// Test standalone mode
 window.LLMShare = {
-  mode: "offline",
+  mode: "standalone",
   // ...
 };
 

@@ -89,8 +89,8 @@ function detectMode(config: LLMShareConfig): WidgetMode {
   if (config.siteId || config.publicKey) {
     return 'hosted';
   }
-  // Otherwise offline
-  return 'offline';
+  // Otherwise standalone
+  return 'standalone';
 }
 
 /**
@@ -179,7 +179,7 @@ export function applyDefaults(
     },
     llms,
     tracking: {
-      enabled: config.tracking?.enabled ?? mode !== 'offline',
+      enabled: config.tracking?.enabled ?? mode !== 'standalone',
       batch: config.tracking?.batch ?? true,
       flushIntervalMs: config.tracking?.flushIntervalMs ?? 8000,
       respectDNT: config.tracking?.respectDNT ?? true,

@@ -4,7 +4,7 @@
 
 import type { LLMShareEvent } from '../events/types';
 
-export type WidgetMode = 'hosted' | 'self_hosted' | 'offline';
+export type WidgetMode = 'hosted' | 'self_hosted' | 'standalone';
 
 export type WidgetPlacement =
   | 'center-right'

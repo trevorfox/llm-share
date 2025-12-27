@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Share Widget - Installation Code Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .header {
+      background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 968px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .panel h2 {
+      margin: 0 0 20px 0;
+      color: #333;
+      font-size: 20px;
+      border-bottom: 2px solid #e5e5e5;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      outline: none;
+      border-color: #0066cc;
+    }
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    .radio-group {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .radio-option {
+      display: flex;
+      align-items: center;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      border: 1px solid #e5e5e5;
+    }
+    .conditional-field {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e5e5e5;
+    }
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .code-block code {
+      display: block;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .copy-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 6px 12px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .copy-button:hover {
+      background: #0052a3;
+    }
+    .copy-button.copied {
+      background: #4caf50;
+    }
+    .install-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+    .install-toggle button {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #ccc;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .install-toggle button.active {
+      background: #0066cc;
+      color: white;
+      border-color: #0066cc;
+    }
+    .status {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    .status.show {
+      display: block;
+    }
+    .status.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #0066cc;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #004085;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>LLM Share Widget</h1>
+    <p>Generate installation code for your website</p>
+  </div>
+
+  <div class="container">
+    <!-- Configuration Panel -->
+    <div class="panel">
+      <h2>Configuration</h2>
+      
+      <div id="status" class="status"></div>
+
+      <!-- Mode Selection -->
+      <div class="form-group">
+        <label>Mode:</label>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="mode-standalone" name="mode" value="standalone" checked>
+            <label for="mode-standalone" style="margin: 0;">Standalone</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="mode-hosted" name="mode" value="hosted">
+            <label for="mode-hosted" style="margin: 0;">Hosted</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="mode-self-hosted" name="mode" value="self_hosted">
+            <label for="mode-self-hosted" style="margin: 0;">Self-Hosted</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hosted Mode Fields -->
+      <div id="hosted-fields" class="conditional-field" style="display: none;">
+        <div class="form-group">
+          <label for="siteId">Site ID:</label>
+          <input type="text" id="siteId" placeholder="pub_123">
+        </div>
+        <div class="form-group">
+          <label for="publicKey">Public Key:</label>
+          <input type="text" id="publicKey" placeholder="pk_abc">
+        </div>
+      </div>
+
+      <!-- Self-Hosted Mode Fields -->
+      <div id="self-hosted-fields" class="conditional-field" style="display: none;">
+        <div class="form-group">
+          <label for="loaderUrl">Loader Script URL:</label>
+          <input type="text" id="loaderUrl" placeholder="https://your-cdn.com/path/to/loader.js">
+          <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">URL to your hosted loader.js file</small>
+        </div>
+        <div class="form-group">
+          <label for="widgetUrl">Widget Bundle URL:</label>
+          <input type="text" id="widgetUrl" placeholder="https://your-cdn.com/path/to/widget.iife.js">
+          <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">URL to your hosted widget.iife.js file (set in config.widgetUrl)</small>
+        </div>
+      </div>
+
+      <!-- Widget Placement -->
+      <div class="form-group">
+        <label for="placement">Placement:</label>
+        <select id="placement">
+          <option value="bottom-left" selected>Bottom-Left</option>
+          <option value="bottom-right">Bottom-Right</option>
+          <option value="center-left">Center-Left</option>
+          <option value="center-right">Center-Right</option>
+          <option value="inline">Inline</option>
+        </select>
+      </div>
+
+      <!-- Inline Selector (conditional) -->
+      <div id="inline-fields" class="conditional-field" style="display: none;">
+        <div class="form-group">
+          <label for="inlineSelector">Inline Selector:</label>
+          <input type="text" id="inlineSelector" placeholder="#my-widget-container">
+        </div>
+      </div>
+
+      <!-- Widget Style -->
+      <div class="form-group">
+        <label for="style">Style:</label>
+        <select id="style">
+          <option value="minimal" selected>Minimal</option>
+          <option value="pill">Pill</option>
+          <option value="square">Square</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+
+      <!-- Widget Theme -->
+      <div class="form-group">
+        <label for="theme">Theme:</label>
+        <select id="theme">
+          <option value="auto" selected>Auto</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </div>
+
+      <!-- LLMs Selection -->
+      <div class="form-group">
+        <label>LLMs:</label>
+        <div id="llms-container">
+          <div class="checkbox-group">
+            <input type="checkbox" id="llm-chatgpt" value="chatgpt" checked>
+            <label for="llm-chatgpt" style="margin: 0;">ChatGPT</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="llm-claude" value="claude" checked>
+            <label for="llm-claude" style="margin: 0;">Claude</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="llm-gemini" value="gemini">
+            <label for="llm-gemini" style="margin: 0;">Gemini</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="llm-perplexity" value="perplexity" checked>
+            <label for="llm-perplexity" style="margin: 0;">Perplexity</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="llm-copy" value="copy" checked>
+            <label for="llm-copy" style="margin: 0;">Copy</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Output Panel -->
+    <div class="panel">
+      <h2>Installation Code</h2>
+      
+      <div class="info-box">
+        Copy the code below and paste it into your HTML page before the closing <code>&lt;/body&gt;</code> tag.
+      </div>
+
+      <!-- Installation Method Toggle -->
+      <div class="install-toggle">
+        <button id="toggle-cdn" class="active" onclick="setInstallMethod('cdn')">CDN</button>
+        <button id="toggle-self-hosted" onclick="setInstallMethod('self-hosted')">Self-Hosted</button>
+      </div>
+
+      <!-- Config Object -->
+      <div style="margin-bottom: 20px;">
+        <label style="margin-bottom: 10px; display: block;">Configuration Object:</label>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyToClipboard('config-code', this)">Copy</button>
+          <code id="config-code"></code>
+        </div>
+      </div>
+
+      <!-- Complete HTML Snippet -->
+      <div>
+        <label style="margin-bottom: 10px; display: block;">Complete HTML Snippet:</label>
+        <div class="code-block">
+          <button class="copy-button" onclick="copyToClipboard('html-code', this)">Copy</button>
+          <code id="html-code"></code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default values for minimization
+    const DEFAULTS = {
+      placement: 'bottom-left',
+      style: 'minimal',
+      theme: 'auto',
+      llms: ['chatgpt', 'claude', 'perplexity', 'copy'],
+      mode: 'standalone'
+    };
+
+    let installMethod = 'cdn';
+    const CDN_URL = 'https://cdn.sendto.chat/loader.js';
+
+    // Mode change handler
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const mode = radio.value;
+        document.getElementById('hosted-fields').style.display = mode === 'hosted' ? 'block' : 'none';
+        document.getElementById('self-hosted-fields').style.display = mode === 'self_hosted' ? 'block' : 'none';
+        updateCode();
+      });
+    });
+
+    // Placement change handler
+    document.getElementById('placement').addEventListener('change', () => {
+      const placement = document.getElementById('placement').value;
+      document.getElementById('inline-fields').style.display = placement === 'inline' ? 'block' : 'none';
+      updateCode();
+    });
+
+    // All other form change handlers
+    ['style', 'theme', 'siteId', 'publicKey', 'widgetUrl', 'inlineSelector', 'loaderUrl'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', updateCode);
+        el.addEventListener('change', updateCode);
+      }
+    });
+
+    // LLM checkbox handlers
+    document.querySelectorAll('#llms-container input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', updateCode);
+    });
+
+    function setInstallMethod(method) {
+      installMethod = method;
+      document.getElementById('toggle-cdn').classList.toggle('active', method === 'cdn');
+      document.getElementById('toggle-self-hosted').classList.toggle('active', method === 'self-hosted');
+      updateCode();
+    }
+
+    function getSelectedLLMs() {
+      const checkboxes = document.querySelectorAll('#llms-container input[type="checkbox"]:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function buildConfig() {
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const placement = document.getElementById('placement').value;
+      const style = document.getElementById('style').value;
+      const theme = document.getElementById('theme').value;
+      const llms = getSelectedLLMs();
+      const siteId = document.getElementById('siteId').value.trim();
+      const publicKey = document.getElementById('publicKey').value.trim();
+      const widgetUrl = document.getElementById('widgetUrl').value.trim();
+      const inlineSelector = document.getElementById('inlineSelector').value.trim();
+
+      const config = {};
+
+      // Mode
+      if (mode !== 'standalone' || siteId || publicKey) {
+        config.mode = mode;
+      }
+
+      // Site credentials (only for hosted mode)
+      if (mode === 'hosted') {
+        if (siteId) config.siteId = siteId;
+        if (publicKey) config.publicKey = publicKey;
+      }
+
+      // Widget URL (for self-hosted mode - goes in config)
+      if (widgetUrl) {
+        config.widgetUrl = widgetUrl;
+      }
+
+      // Widget config
+      const widgetConfig = {};
+      let hasWidgetConfig = false;
+
+      if (placement !== DEFAULTS.placement) {
+        widgetConfig.placement = placement;
+        hasWidgetConfig = true;
+      }
+      if (style !== DEFAULTS.style) {
+        widgetConfig.style = style;
+        hasWidgetConfig = true;
+      }
+      if (theme !== DEFAULTS.theme) {
+        widgetConfig.theme = theme;
+        hasWidgetConfig = true;
+      }
+      if (placement === 'inline' && inlineSelector) {
+        widgetConfig.inlineSelector = inlineSelector;
+        hasWidgetConfig = true;
+      }
+
+      if (hasWidgetConfig) {
+        config.widget = widgetConfig;
+      }
+
+      // LLMs
+      const defaultLLMsStr = DEFAULTS.llms.sort().join(',');
+      const selectedLLMsStr = [...llms].sort().join(',');
+      if (selectedLLMsStr !== defaultLLMsStr) {
+        config.llms = llms;
+      }
+
+      return config;
+    }
+
+    function minimizeConfig(config) {
+      // Remove empty objects
+      if (config.widget && Object.keys(config.widget).length === 0) {
+        delete config.widget;
+      }
+      return config;
+    }
+
+    function generateHTMLSnippet(config, loaderUrl) {
+      const configJson = JSON.stringify(config, null, 2);
+      return `<script>
+window.LLMShare = ${configJson};
+</script>
+<script src="${loaderUrl}"></script>`;
+    }
+
+    function updateCode() {
+      const config = minimizeConfig(buildConfig());
+      const configJson = JSON.stringify(config, null, 2);
+      
+      // Determine loader URL
+      let loaderUrl = CDN_URL;
+      if (installMethod === 'self-hosted') {
+        const loaderUrlInput = document.getElementById('loaderUrl').value.trim();
+        if (loaderUrlInput) {
+          loaderUrl = loaderUrlInput;
+        } else {
+          loaderUrl = 'https://your-cdn.com/path/to/loader.js';
+        }
+      }
+
+      document.getElementById('config-code').textContent = configJson;
+      document.getElementById('html-code').textContent = generateHTMLSnippet(config, loaderUrl);
+    }
+
+    function copyToClipboard(elementId, button) {
+      const code = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('copied');
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        showStatus('Failed to copy to clipboard', true);
+        console.error('Copy error:', err);
+      });
+    }
+
+    function showStatus(message, isError = false) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = 'status ' + (isError ? 'error' : 'success') + ' show';
+      setTimeout(() => {
+        statusEl.classList.remove('show');
+      }, 3000);
+    }
+
+    // Initial code generation
+    updateCode();
+  </script>
+</body>
+</html>
+
