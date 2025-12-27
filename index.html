@@ -52,6 +52,18 @@
       padding: 24px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+    .panel.sticky {
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    @media (max-width: 968px) {
+      .panel.sticky {
+        position: static;
+        max-height: none;
+      }
+    }
     .panel h2 {
       margin: 0 0 20px 0;
       color: #333;
@@ -206,6 +218,17 @@
   </div>
 
   <div class="container">
+    <!-- Widget Preview Panel -->
+    <div class="panel" style="grid-column: 1 / -1;">
+      <h2>Live Preview</h2>
+      <div class="info-box" style="margin-bottom: 20px;">
+        See how the widget looks with your current configuration. The widget updates automatically as you change settings.
+      </div>
+      <div id="widget-preview-inline" style="min-height: 60px; padding: 20px; background: #f9f9f9; border-radius: 4px; border: 1px solid #e5e5e5; display: none;">
+        <p style="color: #666; margin: 0;">Inline widget will appear here</p>
+      </div>
+    </div>
+
     <!-- Configuration Panel -->
     <div class="panel">
       <h2>Configuration</h2>
@@ -298,6 +321,58 @@
         </select>
       </div>
 
+      <!-- Offset -->
+      <div class="form-group">
+        <label for="offsetPx">Offset (px):</label>
+        <input type="number" id="offsetPx" value="16" min="0" step="1">
+        <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">Distance from edge of screen</small>
+      </div>
+
+      <!-- Background Opacity -->
+      <div class="form-group">
+        <label for="backgroundOpacity">Background Opacity:</label>
+        <input type="number" id="backgroundOpacity" value="0.5" min="0" max="1" step="0.1">
+        <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">0.0 (transparent) to 1.0 (opaque)</small>
+      </div>
+
+      <!-- Text Label Settings -->
+      <div class="form-group">
+        <div class="checkbox-group" style="margin-bottom: 10px;">
+          <input type="checkbox" id="textLabelEnabled" checked>
+          <label for="textLabelEnabled" style="margin: 0; font-weight: 500;">Enable Text Label</label>
+        </div>
+        <div id="textLabelFields" style="margin-left: 24px;">
+          <div style="margin-bottom: 10px;">
+            <label for="textLabelText" style="font-weight: normal;">Label Text:</label>
+            <input type="text" id="textLabelText" value="Explore with AI" style="margin-top: 4px;">
+          </div>
+          <div style="margin-bottom: 10px;">
+            <label for="textLabelPosition" style="font-weight: normal;">Position:</label>
+            <select id="textLabelPosition" style="margin-top: 4px;">
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+              <option value="top" selected>Top</option>
+            </select>
+          </div>
+          <div>
+            <label for="textLabelHideDelay" style="font-weight: normal;">Hide Delay (ms):</label>
+            <input type="number" id="textLabelHideDelay" value="3000" min="0" step="100" style="margin-top: 4px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline Alignment (conditional) -->
+      <div id="inline-alignment-field" class="conditional-field" style="display: none;">
+        <div class="form-group">
+          <label for="inlineAlignment">Inline Alignment:</label>
+          <select id="inlineAlignment">
+            <option value="left" selected>Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+      </div>
+
       <!-- LLMs Selection -->
       <div class="form-group">
         <label>LLMs:</label>
@@ -327,7 +402,7 @@
     </div>
 
     <!-- Code Output Panel -->
-    <div class="panel">
+    <div class="panel sticky" id="code-output-panel">
       <h2>Installation Code</h2>
       
       <div class="info-box">
@@ -372,6 +447,7 @@
 
     let installMethod = 'cdn';
     const CDN_URL = 'https://cdn.sendto.chat/loader.js';
+    let widgetInstance = null;
 
     // Mode change handler
     document.querySelectorAll('input[name="mode"]').forEach(radio => {
@@ -387,11 +463,20 @@
     document.getElementById('placement').addEventListener('change', () => {
       const placement = document.getElementById('placement').value;
       document.getElementById('inline-fields').style.display = placement === 'inline' ? 'block' : 'none';
+      document.getElementById('inline-alignment-field').style.display = placement === 'inline' ? 'block' : 'none';
+      updateCode();
+    });
+
+    // Text label enabled handler
+    document.getElementById('textLabelEnabled').addEventListener('change', () => {
+      const enabled = document.getElementById('textLabelEnabled').checked;
+      document.getElementById('textLabelFields').style.display = enabled ? 'block' : 'none';
       updateCode();
     });
 
     // All other form change handlers
-    ['style', 'theme', 'siteId', 'publicKey', 'widgetUrl', 'inlineSelector', 'loaderUrl'].forEach(id => {
+    ['style', 'theme', 'siteId', 'publicKey', 'widgetUrl', 'inlineSelector', 'loaderUrl', 
+     'offsetPx', 'backgroundOpacity', 'textLabelText', 'textLabelPosition', 'textLabelHideDelay', 'inlineAlignment'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', updateCode);
@@ -426,6 +511,80 @@
       const publicKey = document.getElementById('publicKey').value.trim();
       const widgetUrl = document.getElementById('widgetUrl').value.trim();
       const inlineSelector = document.getElementById('inlineSelector').value.trim();
+      const offsetPx = parseInt(document.getElementById('offsetPx').value) || 16;
+      const backgroundOpacity = parseFloat(document.getElementById('backgroundOpacity').value) || 0.5;
+      const textLabelEnabled = document.getElementById('textLabelEnabled').checked;
+      const textLabelText = document.getElementById('textLabelText').value.trim();
+      const textLabelPosition = document.getElementById('textLabelPosition').value;
+      const textLabelHideDelay = parseInt(document.getElementById('textLabelHideDelay').value) || 3000;
+      const inlineAlignment = document.getElementById('inlineAlignment').value;
+
+      // Build base config object
+      const config = {
+        mode: mode,
+        llms: llms,
+        widget: {
+          placement: placement,
+          style: style,
+          theme: theme,
+          offsetPx: offsetPx,
+          backgroundOpacity: backgroundOpacity,
+          textLabel: {
+            enabled: textLabelEnabled,
+            text: textLabelText || 'Explore with AI',
+            position: textLabelPosition,
+            hideDelay: textLabelHideDelay,
+          }
+        },
+        debug: { logToConsole: false }
+      };
+
+      // Site credentials (only for hosted mode)
+      if (mode === 'hosted') {
+        if (siteId) {
+          config.siteId = siteId;
+        }
+        if (publicKey) {
+          config.publicKey = publicKey;
+        }
+      }
+
+      // Widget URL (for self-hosted mode - goes in config)
+      if (widgetUrl) {
+        config.widgetUrl = widgetUrl;
+      }
+
+      // Handle inline placement
+      if (placement === 'inline') {
+        if (inlineSelector) {
+          config.widget.inlineSelector = inlineSelector;
+        } else {
+          // Use preview container for inline
+          config.widget.inlineSelector = '#widget-preview-inline';
+        }
+        config.widget.inlineAlignment = inlineAlignment;
+      }
+
+      return config;
+    }
+
+    function buildMinimalConfig() {
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const placement = document.getElementById('placement').value;
+      const style = document.getElementById('style').value;
+      const theme = document.getElementById('theme').value;
+      const llms = getSelectedLLMs();
+      const siteId = document.getElementById('siteId').value.trim();
+      const publicKey = document.getElementById('publicKey').value.trim();
+      const widgetUrl = document.getElementById('widgetUrl').value.trim();
+      const inlineSelector = document.getElementById('inlineSelector').value.trim();
+      const offsetPx = parseInt(document.getElementById('offsetPx').value) || 16;
+      const backgroundOpacity = parseFloat(document.getElementById('backgroundOpacity').value) || 0.5;
+      const textLabelEnabled = document.getElementById('textLabelEnabled').checked;
+      const textLabelText = document.getElementById('textLabelText').value.trim();
+      const textLabelPosition = document.getElementById('textLabelPosition').value;
+      const textLabelHideDelay = parseInt(document.getElementById('textLabelHideDelay').value) || 3000;
+      const inlineAlignment = document.getElementById('inlineAlignment').value;
 
       const config = {};
 
@@ -461,8 +620,42 @@
         widgetConfig.theme = theme;
         hasWidgetConfig = true;
       }
+      if (offsetPx !== 16) {
+        widgetConfig.offsetPx = offsetPx;
+        hasWidgetConfig = true;
+      }
+      if (backgroundOpacity !== 0.5) {
+        widgetConfig.backgroundOpacity = backgroundOpacity;
+        hasWidgetConfig = true;
+      }
       if (placement === 'inline' && inlineSelector) {
         widgetConfig.inlineSelector = inlineSelector;
+        hasWidgetConfig = true;
+      }
+      if (placement === 'inline' && inlineAlignment !== 'left') {
+        widgetConfig.inlineAlignment = inlineAlignment;
+        hasWidgetConfig = true;
+      }
+
+      // Text label config (default is disabled, so only include if enabled or non-default values)
+      if (textLabelEnabled || textLabelText !== 'Explore with AI' || textLabelPosition !== 'top' || textLabelHideDelay !== 3000) {
+        widgetConfig.textLabel = {};
+        if (textLabelEnabled) {
+          widgetConfig.textLabel.enabled = true;
+        }
+        if (textLabelText && textLabelText !== 'Explore with AI') {
+          widgetConfig.textLabel.text = textLabelText;
+        }
+        if (textLabelPosition !== 'top') {
+          widgetConfig.textLabel.position = textLabelPosition;
+        }
+        if (textLabelHideDelay !== 3000) {
+          widgetConfig.textLabel.hideDelay = textLabelHideDelay;
+        }
+        // If enabled but all other values are defaults, still include enabled: true
+        if (textLabelEnabled && !widgetConfig.textLabel.text && !widgetConfig.textLabel.position && !widgetConfig.textLabel.hideDelay) {
+          widgetConfig.textLabel.enabled = true;
+        }
         hasWidgetConfig = true;
       }
 
@@ -492,12 +685,12 @@
       const configJson = JSON.stringify(config, null, 2);
       return `<script>
 window.LLMShare = ${configJson};
-</script>
-<script src="${loaderUrl}"></script>`;
+<\/script>
+<script src="${loaderUrl}"><\/script>`;
     }
 
     function updateCode() {
-      const config = minimizeConfig(buildConfig());
+      const config = minimizeConfig(buildMinimalConfig());
       const configJson = JSON.stringify(config, null, 2);
       
       // Determine loader URL
@@ -513,6 +706,130 @@ window.LLMShare = ${configJson};
 
       document.getElementById('config-code').textContent = configJson;
       document.getElementById('html-code').textContent = generateHTMLSnippet(config, loaderUrl);
+      
+      // Update widget preview
+      updateWidgetPreview();
+    }
+
+    function destroyWidgetPreview() {
+      if (widgetInstance && widgetInstance.destroy) {
+        try {
+          widgetInstance.destroy();
+        } catch (e) {
+          console.error('Error destroying widget:', e);
+        }
+        widgetInstance = null;
+      }
+      // Also try window instance
+      if (window.__LLMShareInstance && window.__LLMShareInstance.destroy) {
+        try {
+          window.__LLMShareInstance.destroy();
+        } catch (e) {
+          console.error('Error destroying window widget:', e);
+        }
+        delete window.__LLMShareInstance;
+      }
+      // Clear inline preview container
+      const inlinePreview = document.getElementById('widget-preview-inline');
+      if (inlinePreview) {
+        inlinePreview.innerHTML = '<p style="color: #666; margin: 0;">Inline widget will appear here</p>';
+        inlinePreview.style.display = 'none';
+      }
+    }
+
+    function updateWidgetPreview() {
+      if (!window.LLMShareWidget || !window.LLMShareWidget.init) {
+        // Widget bundle not loaded yet
+        loadWidgetBundle(() => {
+          setTimeout(() => updateWidgetPreview(), 100);
+        });
+        return;
+      }
+
+      // Destroy existing widget
+      destroyWidgetPreview();
+
+      const placement = document.getElementById('placement').value;
+      const inlinePreview = document.getElementById('widget-preview-inline');
+      
+      // Build full config for preview
+      const config = buildConfig();
+      
+      // Show/hide inline container based on placement
+      if (placement === 'inline') {
+        if (inlinePreview) {
+          inlinePreview.style.display = 'block';
+          inlinePreview.innerHTML = '';
+        }
+      } else {
+        if (inlinePreview) {
+          inlinePreview.style.display = 'none';
+        }
+      }
+
+      // Initialize widget
+      try {
+        window.LLMShareWidget.init(config);
+        // Store instance reference
+        setTimeout(() => {
+          if (window.__LLMShareInstance) {
+            widgetInstance = window.__LLMShareInstance;
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error initializing widget preview:', error);
+        if (inlinePreview && placement === 'inline') {
+          inlinePreview.innerHTML = '<p style="color: #d32f2f; margin: 0;">Error loading widget preview. Check console for details.</p>';
+        }
+      }
+    }
+
+    function loadWidgetBundle(callback) {
+      if (window.LLMShareWidget && window.LLMShareWidget.init) {
+        if (callback) callback();
+        return;
+      }
+
+      const existingScript = document.querySelector('script[src*="widget.iife.js"]');
+      if (existingScript) {
+        let attempts = 0;
+        const checkLoaded = setInterval(() => {
+          attempts++;
+          if (window.LLMShareWidget && window.LLMShareWidget.init) {
+            clearInterval(checkLoaded);
+            if (callback) callback();
+          } else if (attempts > 50) {
+            clearInterval(checkLoaded);
+            console.error('Widget bundle loaded but init function not available');
+          }
+        }, 100);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = './dist/widget.iife.js';
+      script.async = true;
+      script.onload = () => {
+        let attempts = 0;
+        const checkLoaded = setInterval(() => {
+          attempts++;
+          if (window.LLMShareWidget && window.LLMShareWidget.init) {
+            clearInterval(checkLoaded);
+            if (callback) callback();
+          } else if (attempts > 50) {
+            clearInterval(checkLoaded);
+            console.error('Widget bundle loaded but init function not available');
+          }
+        }, 100);
+      };
+      script.onerror = () => {
+        console.error('Failed to load widget bundle from ./dist/widget.iife.js');
+        const preview = document.getElementById('widget-preview');
+        if (preview) {
+          preview.innerHTML = '<p style="color: #d32f2f; margin: 0;">Failed to load widget bundle. Make sure dist/widget.iife.js exists.</p>';
+        }
+      };
+      document.head.appendChild(script);
     }
 
     function copyToClipboard(elementId, button) {
@@ -540,8 +857,34 @@ window.LLMShare = ${configJson};
       }, 3000);
     }
 
-    // Initial code generation
-    updateCode();
+    // Initialize UI state
+    function initializeUI() {
+      // Set initial visibility for conditional fields
+      const placement = document.getElementById('placement').value;
+      document.getElementById('inline-fields').style.display = placement === 'inline' ? 'block' : 'none';
+      document.getElementById('inline-alignment-field').style.display = placement === 'inline' ? 'block' : 'none';
+      
+      const textLabelEnabled = document.getElementById('textLabelEnabled').checked;
+      document.getElementById('textLabelFields').style.display = textLabelEnabled ? 'block' : 'none';
+    }
+
+    // Load widget bundle and initialize preview
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeUI();
+        loadWidgetBundle(() => {
+          // Initial code generation and preview
+          updateCode();
+        });
+      });
+    } else {
+      initializeUI();
+      loadWidgetBundle(() => {
+        // Initial code generation and preview
+        updateCode();
+      });
+    }
   </script>
 </body>
 </html>
