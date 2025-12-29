@@ -104,9 +104,9 @@ function getDefaultEndpoints(mode: WidgetMode): {
   if (mode === 'hosted') {
     // Default to your SaaS endpoints (can be overridden)
     return {
-      collector: 'https://c.sendto.chat/v1/events',
-      share: 'https://c.sendto.chat/v1/share',
-      redirectBase: 'https://t.sendto.chat/s/',
+      collector: 'https://c.getsourced.ai/v1/events',
+      share: 'https://c.getsourced.ai/v1/share',
+      redirectBase: 'https://t.getsourced.ai/s/',
     };
   }
   return {

@@ -18,7 +18,7 @@
   // Default to CDN, but can be overridden via config.widgetUrl
   const widgetUrl =
     rawConfig.widgetUrl ||
-    'https://cdn.sendto.chat/widget.iife.js';
+    'https://cdn.getsourced.ai/widget.iife.js';
 
   // Create script tag to load widget bundle
   const script = document.createElement('script');

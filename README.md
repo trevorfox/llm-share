@@ -2,6 +2,21 @@
 
 A drop-in JavaScript widget that adds a customizable "send this page to an LLM" sharing layer to any website via a single script tag and config object.
 
+## Quick Start
+
+**Simplest integration (standalone mode - no backend needed):**
+
+```html
+<script>
+window.LLMShare = {
+  mode: "standalone"
+};
+</script>
+<script src="https://cdn.getsourced.ai/loader.js"></script>
+```
+
+That's it! The widget will appear on your page with smart defaults.
+
 ## Features
 
 - 🚀 **Drop-in integration** - Single script tag + config object
@@ -25,24 +40,24 @@ window.LLMShare = {
   publicKey: "pk_abc",
   mode: "hosted",
   endpoints: {
-    collector: "https://c.sendto.chat/v1/events",
-    share: "https://c.sendto.chat/v1/share",
-    redirectBase: "https://t.sendto.chat/s/"
+    collector: "https://c.getsourced.ai/v1/events",
+    share: "https://c.getsourced.ai/v1/share",
+    redirectBase: "https://t.getsourced.ai/s/"
   },
   // ... rest of config
 };
 </script>
-<script src="https://cdn.sendto.chat/loader.js"></script>
+<script src="https://cdn.getsourced.ai/loader.js"></script>
 ```
 
 ### npm
 
 ```bash
-npm install @sendto/llm-share
+npm install @trevorfox/llm-share
 ```
 
 ```javascript
-import { init } from '@sendto/llm-share';
+import { init } from '@trevorfox/llm-share';
 
 init({
   mode: "standalone",
@@ -52,16 +67,42 @@ init({
 
 ### Self-hosted
 
-Download the `dist/` files and host them on your own CDN:
+**Step 1: Build the widget**
+
+```bash
+# Clone the repository
+git clone https://github.com/trevorfox/llm-share.git
+cd llm-share
+
+# Install dependencies
+npm install
+
+# Build the widget and loader
+npm run build
+```
+
+This creates the `dist/` folder with:
+- `loader.js` - The loader script (required)
+- `widget.*.js` - Widget bundles in various formats
+- Type definitions (`.d.ts` files)
+
+**Step 2: Host the files**
+
+Upload the `dist/` folder to your CDN or web server, then include:
 
 ```html
 <script>
 window.LLMShare = {
-  // ... config
+  mode: "standalone"
+  // ... your config
 };
 </script>
-<script src="https://your-cdn.com/path/to/loader.js"></script>
+<script src="https://your-cdn.com/path/to/dist/loader.js"></script>
 ```
+
+**Required files for self-hosting:**
+- `dist/loader.js` (required)
+- `dist/widget.iife.js` (loaded automatically by loader.js)
 
 ## Configuration
 
@@ -137,11 +178,8 @@ window.LLMShare = {
 
 ## Examples
 
-See `test.html` for interactive testing with multiple widget configurations including:
-- Basic usage with default config
-- Custom configurations with inline placement
-- Various placement options (center-right, center-left, bottom-right, bottom-left)
-- Different styles and themes
+- **[index.html](./index.html)** - Interactive config builder tool to generate your configuration code
+- See the [TESTING.md](./TESTING.md) guide for comprehensive testing examples
 
 ## Browser Support
 

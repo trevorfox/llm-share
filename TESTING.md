@@ -60,12 +60,12 @@ describe('My Feature', () => {
    ```
 
 3. **Open test page:**
-   - Open http://localhost:8000/test.html in your browser
+   - Open http://localhost:8000/index.html in your browser
    - Open browser DevTools (F12) to see console logs
 
 ### Test Files
 
-- `test.html` - Main interactive test page (root directory) with multiple widget configurations
+- `index.html` - Main interactive test page (root directory) with config builder and widget preview
 
 ### What to Test Manually
 
@@ -127,7 +127,7 @@ describe('My Feature', () => {
    ```
 
 3. **Open test page:**
-   - http://localhost:8000/test.html
+   - http://localhost:8000/index.html
    - Keep browser DevTools open
 
 4. **Make changes:**
@@ -157,7 +157,7 @@ npm run build
 
 ### Test with Different Configs
 
-Edit `test.html` to test different configurations:
+Edit `index.html` or use the config builder to test different configurations:
 
 ```javascript
 // Test standalone mode
@@ -170,7 +170,7 @@ window.LLMShare = {
 window.LLMShare = {
   mode: "hosted",
   endpoints: {
-    collector: "https://c.sendto.chat/v1/events",
+    collector: "https://c.getsourced.ai/v1/events",
     // ...
   }
 };
@@ -220,7 +220,7 @@ Targets:
 
 ### Enable Debug Mode
 
-In `test.html`, set:
+In `index.html` or your test page, set:
 ```javascript
 debug: {
   logToConsole: true

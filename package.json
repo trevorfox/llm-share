@@ -1,19 +1,27 @@
 {
-  "name": "@sendto/llm-share",
+  "name": "@trevorfox/llm-share",
   "version": "1.0.0",
   "description": "Drop-in JavaScript widget for sending pages to LLMs",
   "type": "module",
   "main": "./dist/widget.umd.js",
-  "module": "./dist/widget.esm.js",
+  "module": "./dist/widget.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/widget.esm.js",
+      "import": "./dist/widget.es.js",
       "require": "./dist/widget.umd.js",
       "types": "./dist/index.d.ts"
     },
     "./loader": "./dist/loader.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trevorfox/llm-share.git"
+  },
+  "bugs": {
+    "url": "https://github.com/trevorfox/llm-share/issues"
+  },
+  "homepage": "https://github.com/trevorfox/llm-share#readme",
   "files": [
     "dist",
     "README.md"
@@ -42,7 +50,7 @@
     "claude",
     "gemini"
   ],
-  "author": "",
+  "author": "Trevor Fox",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -78,9 +78,9 @@ describe('Config Validation', () => {
       
       const normalized = validateConfig(config);
       expect(normalized.mode).toBe('hosted');
-      expect(normalized.endpoints.collector).toBe('https://c.sendto.chat/v1/events');
-      expect(normalized.endpoints.share).toBe('https://c.sendto.chat/v1/share');
-      expect(normalized.endpoints.redirectBase).toBe('https://t.sendto.chat/s/');
+      expect(normalized.endpoints.collector).toBe('https://c.getsourced.ai/v1/events');
+      expect(normalized.endpoints.share).toBe('https://c.getsourced.ai/v1/share');
+      expect(normalized.endpoints.redirectBase).toBe('https://t.getsourced.ai/s/');
       expect(normalized.tracking.enabled).toBe(true);
     });
 
@@ -91,9 +91,9 @@ describe('Config Validation', () => {
       
       const normalized = validateConfig(config);
       expect(normalized.mode).toBe('hosted');
-      expect(normalized.endpoints.collector).toBe('https://c.sendto.chat/v1/events');
-      expect(normalized.endpoints.share).toBe('https://c.sendto.chat/v1/share');
-      expect(normalized.endpoints.redirectBase).toBe('https://t.sendto.chat/s/');
+      expect(normalized.endpoints.collector).toBe('https://c.getsourced.ai/v1/events');
+      expect(normalized.endpoints.share).toBe('https://c.getsourced.ai/v1/share');
+      expect(normalized.endpoints.redirectBase).toBe('https://t.getsourced.ai/s/');
     });
 
     it('should respect explicit mode even with siteId', () => {
