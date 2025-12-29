@@ -2,6 +2,10 @@
 
 A drop-in JavaScript widget that adds a customizable "send this page to an LLM" sharing layer to any website via a single script tag and config object.
 
+## 🚀 [**Try the Interactive Setup Tool →**](https://trevorfox.github.io/llm-share/)
+
+Generate your installation code with a visual configuration builder and live preview.
+
 ## Quick Start
 
 **Simplest integration (standalone mode - no backend needed):**
