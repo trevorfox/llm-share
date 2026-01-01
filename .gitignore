@@ -49,6 +49,6 @@ Thumbs.db
 .tmp/
 
 # Documentation (internal)
-prd.md
+prd*.md
 
 .vercel
