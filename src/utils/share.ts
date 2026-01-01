@@ -5,7 +5,10 @@ export async function createShareUrl(
   url: string,
   shareEndpoint: string,
   siteId: string | null,
-  publicKey: string | null
+  publicKey: string | null,
+  llmId: string,
+  pageTitle?: string,
+  viewId?: string
 ): Promise<string | null> {
   try {
     const response = await fetch(shareEndpoint, {
@@ -17,6 +20,9 @@ export async function createShareUrl(
         url,
         site_id: siteId,
         public_key: publicKey,
+        llm_id: llmId,
+        page_title: pageTitle,
+        view_id: viewId,
       }),
     });
 
@@ -26,13 +32,15 @@ export async function createShareUrl(
 
     const data = await response.json();
     
-    // Expect response with token or url
-    if (data.token && data.redirect_base) {
-      return `${data.redirect_base}${data.token}`;
+    // Check for share_url first (preferred format from API)
+    if (data.share_url) {
+      return data.share_url;
+    } else if (data.token && data.redirect_base) {
+      // Fallback: construct URL from token and redirect_base
+      const slug = data.slug ? `/${data.slug}` : '';
+      return `${data.redirect_base}${data.token}${slug}`;
     } else if (data.url) {
       return data.url;
-    } else if (data.share_url) {
-      return data.share_url;
     }
 
     return null;

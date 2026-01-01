@@ -192,11 +192,16 @@ async function handleLLMClick(
     
     if (config.endpoints.share) {
       try {
+        const pageTitle = typeof document !== 'undefined' ? document.title : undefined;
+        const viewId = tracker.getViewId();
         const shareUrl = await createShareUrl(
           currentUrl,
           config.endpoints.share,
           config.siteId,
-          config.publicKey
+          config.publicKey,
+          llm.id,
+          pageTitle,
+          viewId
         );
         if (shareUrl) {
           finalUrl = shareUrl;

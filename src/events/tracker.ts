@@ -60,6 +60,13 @@ export class EventTracker {
   }
 
   /**
+   * Get current view ID
+   */
+  getViewId(): string {
+    return this.viewId;
+  }
+
+  /**
    * Create base event object
    */
   private createBaseEvent(eventType: EventType): Partial<LLMShareEvent> {
