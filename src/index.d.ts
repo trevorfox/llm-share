@@ -91,6 +91,7 @@ declare global {
     };
     __LLMShareQueue?: Array<() => void>;
     __LLMShareInitialized?: boolean;
+    __LLMShareLoading?: boolean;
   }
 }
 

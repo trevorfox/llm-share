@@ -351,8 +351,6 @@ export class Widget {
         this.startTextHideTimer();
       }
     }
-    
-    this.container.appendChild(buttonContainer);
   }
 
   /**

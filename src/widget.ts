@@ -14,6 +14,16 @@ import { validateConfig } from './config/schema';
  * Initialize widget
  */
 export function init(config?: LLMShareConfig): void {
+  // Prevent double initialization - check if already initialized
+  if (typeof window !== 'undefined') {
+    if (window.__LLMShareInstance) {
+      if (window.LLMShare?.debug?.logToConsole) {
+        console.warn('[LLMShare] Widget already initialized, skipping');
+      }
+      return; // Already initialized
+    }
+  }
+
   // Get config from window or parameter
   let normalizedConfig;
   
@@ -58,6 +68,8 @@ export function init(config?: LLMShareConfig): void {
         delete window.__LLMShareInstance;
       },
     };
+    // Clear loading flag now that we're initialized
+    delete window.__LLMShareLoading;
   }
 }
 
@@ -68,10 +80,12 @@ if (typeof window !== 'undefined') {
   };
   
   // Auto-init if config exists and DOM is ready (for direct script inclusion)
-  // But only if loader hasn't already initialized
-  if (window.LLMShare && !window.__LLMShareInitialized) {
+  // But only if loader hasn't already initialized or isn't loading
+  // Check __LLMShareLoading flag set by loader BEFORE script injection
+  if (window.LLMShare && !window.__LLMShareInitialized && !window.__LLMShareInstance && !window.__LLMShareLoading) {
     const doInit = () => {
-      if (!window.__LLMShareInitialized) {
+      // Double-check flags and instance to prevent race conditions
+      if (!window.__LLMShareInitialized && !window.__LLMShareInstance && !window.__LLMShareLoading) {
         window.__LLMShareInitialized = true;
         init();
       }
@@ -81,7 +95,8 @@ if (typeof window !== 'undefined') {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', doInit);
       } else {
-        doInit();
+        // Use setTimeout to ensure loader's onload has a chance to set the flag first
+        setTimeout(doInit, 0);
       }
     }
   }

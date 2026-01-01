@@ -30,6 +30,10 @@ declare const __VERSION__: string;
   script.async = true;
   script.defer = true;
 
+  // Set flag BEFORE loading script to prevent auto-init race condition
+  window.__LLMShareInitialized = false;
+  window.__LLMShareLoading = true;
+
   // Queue for early calls (if widget API is called before load)
   const queue: Array<() => void> = [];
   window.__LLMShareQueue = queue;
@@ -55,6 +59,7 @@ declare const __VERSION__: string;
   script.onerror = () => {
     console.error('[LLMShare] Failed to load widget bundle from:', widgetUrl);
     delete window.__LLMShareQueue;
+    delete window.__LLMShareLoading;
   };
 
   // Inject script
