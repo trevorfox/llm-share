@@ -27,6 +27,37 @@ export class EventTracker {
   }
 
   /**
+   * Collect browser attribution data
+   */
+  private getAttributionData(): {
+    language?: string;
+    timezone?: string;
+    screen_width?: number;
+    screen_height?: number;
+    viewport_width?: number;
+    viewport_height?: number;
+  } {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return {};
+    }
+
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return {
+        language: navigator.language || undefined,
+        timezone: timezone || undefined,
+        screen_width: window.screen?.width || undefined,
+        screen_height: window.screen?.height || undefined,
+        viewport_width: window.innerWidth || undefined,
+        viewport_height: window.innerHeight || undefined,
+      };
+    } catch (error) {
+      // Silently fail if attribution data can't be collected
+      return {};
+    }
+  }
+
+  /**
    * Create base event object
    */
   private createBaseEvent(eventType: EventType): Partial<LLMShareEvent> {
@@ -38,6 +69,7 @@ export class EventTracker {
       page_url: typeof window !== 'undefined' ? window.location.href : '',
       view_id: this.viewId,
       mode: this.config.mode,
+      ...this.getAttributionData(),
     };
   }
 

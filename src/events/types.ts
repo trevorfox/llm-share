@@ -19,6 +19,13 @@ export interface BaseEvent {
   llm_id?: string; // e.g. "chatgpt", "claude"
   mode: 'hosted' | 'self_hosted' | 'standalone';
   metadata?: Record<string, unknown>;
+  // Attribution data (browser-available data)
+  language?: string; // navigator.language (e.g., "en-US")
+  timezone?: string; // Intl.DateTimeFormat().resolvedOptions().timeZone (e.g., "America/Los_Angeles")
+  screen_width?: number; // window.screen.width
+  screen_height?: number; // window.screen.height
+  viewport_width?: number; // window.innerWidth
+  viewport_height?: number; // window.innerHeight
 }
 
 export interface ImpressionEvent extends BaseEvent {
