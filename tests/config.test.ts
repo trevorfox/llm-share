@@ -62,6 +62,8 @@ describe('Config Validation', () => {
       expect(normalized.tracking.batch).toBe(true);
       expect(normalized.tracking.flushIntervalMs).toBe(8000);
       expect(normalized.tracking.respectDNT).toBe(true);
+      expect(normalized.tracking.pushToDataLayer).toBe(false);
+      expect(normalized.tracking.dataLayerName).toBe('dataLayer');
       
       // Callback defaults
       expect(normalized.callbacks.onEvent).toBeNull();
@@ -300,6 +302,35 @@ describe('Config Validation', () => {
       expect(normalized.tracking.batch).toBe(true);
       expect(normalized.tracking.flushIntervalMs).toBe(8000);
       expect(normalized.tracking.respectDNT).toBe(true);
+      expect(normalized.tracking.pushToDataLayer).toBe(false);
+      expect(normalized.tracking.dataLayerName).toBe('dataLayer');
+    });
+
+    it('should allow enabling pushToDataLayer', () => {
+      const config: LLMShareConfig = {
+        siteId: 'pub_123',
+        tracking: {
+          pushToDataLayer: true,
+        },
+      };
+      
+      const normalized = validateConfig(config);
+      expect(normalized.tracking.pushToDataLayer).toBe(true);
+      expect(normalized.tracking.dataLayerName).toBe('dataLayer');
+    });
+
+    it('should allow custom dataLayerName', () => {
+      const config: LLMShareConfig = {
+        siteId: 'pub_123',
+        tracking: {
+          pushToDataLayer: true,
+          dataLayerName: 'customDataLayer',
+        },
+      };
+      
+      const normalized = validateConfig(config);
+      expect(normalized.tracking.pushToDataLayer).toBe(true);
+      expect(normalized.tracking.dataLayerName).toBe('customDataLayer');
     });
   });
 

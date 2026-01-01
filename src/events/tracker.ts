@@ -42,6 +42,34 @@ export class EventTracker {
   }
 
   /**
+   * Push event to dataLayer if enabled
+   */
+  private pushToDataLayer(event: LLMShareEvent): void {
+    if (!this.config.tracking.pushToDataLayer || typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const dataLayerName = this.config.tracking.dataLayerName;
+      const windowWithDataLayer = window as typeof window & {
+        [key: string]: unknown[];
+      };
+
+      // Initialize dataLayer if it doesn't exist
+      if (!windowWithDataLayer[dataLayerName]) {
+        windowWithDataLayer[dataLayerName] = [];
+      }
+
+      // Push event to dataLayer
+      windowWithDataLayer[dataLayerName].push(event);
+    } catch (error) {
+      if (this.config.debug.logToConsole) {
+        console.error('[LLMShare] Error pushing to dataLayer:', error);
+      }
+    }
+  }
+
+  /**
    * Emit an event
    */
   emit(event: LLMShareEvent): void {
@@ -55,6 +83,9 @@ export class EventTracker {
         }
       }
     }
+
+    // Push to dataLayer if enabled
+    this.pushToDataLayer(event);
 
     // Log to console if debug mode enabled
     if (this.config.debug.logToConsole) {

@@ -183,6 +183,8 @@ export function applyDefaults(
       batch: config.tracking?.batch ?? true,
       flushIntervalMs: config.tracking?.flushIntervalMs ?? 8000,
       respectDNT: config.tracking?.respectDNT ?? true,
+      pushToDataLayer: config.tracking?.pushToDataLayer ?? false,
+      dataLayerName: config.tracking?.dataLayerName ?? 'dataLayer',
     },
     callbacks: {
       onEvent: config.callbacks?.onEvent ?? null,
