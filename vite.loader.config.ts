@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
+
+// Read version from package.json
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const version = packageJson.version;
 
 export default defineConfig({
   build: {
@@ -21,6 +26,7 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': '"production"',
+    '__VERSION__': JSON.stringify(version),
   },
 });
 

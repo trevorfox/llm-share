@@ -3,6 +3,9 @@
  * Must be < 2KB minified + gzipped
  */
 
+// Version is injected at build time via Vite define
+declare const __VERSION__: string;
+
 (function () {
   'use strict';
 
@@ -15,10 +18,11 @@
   }
 
   // Determine widget bundle URL
-  // Default to CDN, but can be overridden via config.widgetUrl
+  // Default to versioned CDN URL, but can be overridden via config.widgetUrl
+  const version = typeof __VERSION__ !== 'undefined' ? __VERSION__ : '1.0.0';
   const widgetUrl =
     rawConfig.widgetUrl ||
-    'https://cdn.getsourced.ai/widget.iife.js';
+    `https://cdn.getsourced.ai/v${version}/widget.iife.js`;
 
   // Create script tag to load widget bundle
   const script = document.createElement('script');
