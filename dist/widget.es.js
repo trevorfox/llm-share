@@ -283,6 +283,12 @@ class EventTracker {
     }
   }
   /**
+   * Get current view ID
+   */
+  getViewId() {
+    return this.viewId;
+  }
+  /**
    * Create base event object
    */
   createBaseEvent(eventType) {
@@ -961,7 +967,7 @@ Selected text: ${selectedText}`);
 URL: ${url}`);
   return parts.join("");
 }
-async function createShareUrl(url, shareEndpoint, siteId, publicKey) {
+async function createShareUrl(url, shareEndpoint, siteId, publicKey, llmId, pageTitle, viewId) {
   try {
     const response = await fetch(shareEndpoint, {
       method: "POST",
@@ -971,19 +977,23 @@ async function createShareUrl(url, shareEndpoint, siteId, publicKey) {
       body: JSON.stringify({
         url,
         site_id: siteId,
-        public_key: publicKey
+        public_key: publicKey,
+        llm_id: llmId,
+        page_title: pageTitle,
+        view_id: viewId
       })
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     const data = await response.json();
-    if (data.token && data.redirect_base) {
-      return `${data.redirect_base}${data.token}`;
+    if (data.share_url) {
+      return data.share_url;
+    } else if (data.token && data.redirect_base) {
+      const slug = data.slug ? `/${data.slug}` : "";
+      return `${data.redirect_base}${data.token}${slug}`;
     } else if (data.url) {
       return data.url;
-    } else if (data.share_url) {
-      return data.share_url;
     }
     return null;
   } catch (error) {
@@ -1108,11 +1118,16 @@ async function handleLLMClick(llm, config, tracker, buttonElement) {
     let finalUrl = currentUrl;
     if (config.endpoints.share) {
       try {
+        const pageTitle = typeof document !== "undefined" ? document.title : void 0;
+        const viewId = tracker.getViewId();
         const shareUrl = await createShareUrl(
           currentUrl,
           config.endpoints.share,
           config.siteId,
-          config.publicKey
+          config.publicKey,
+          llm.id,
+          pageTitle,
+          viewId
         );
         if (shareUrl) {
           finalUrl = shareUrl;

@@ -54,45 +54,26 @@ export function createLLMButton(
   // or by explicitly configuring showLabels in the future
 
   // Handle click or set href
+  // For link actions, we need to handle clicks async to create share URL first
+  // So we'll always use button behavior and handle share URL creation in handleLLMClick
   if (llm.action === 'link' && llm.urlTemplate && element instanceof HTMLAnchorElement) {
-    // Generate URL immediately for link actions
-    const url = generateLLMUrl(llm, config);
-    if (config.debug.logToConsole) {
-      console.log(`[LLMShare] Generated URL for ${llm.id}:`, url);
+    // Convert to button to handle async share URL creation
+    const button = document.createElement('button');
+    button.className = element.className;
+    button.setAttribute('type', 'button');
+    button.setAttribute('aria-label', element.getAttribute('aria-label') || `Open current page in ${llm.label} to ask questions`);
+    // Copy children
+    while (element.firstChild) {
+      button.appendChild(element.firstChild);
     }
-    if (url) {
-      element.href = url;
-      // Add click handler to track and ensure link opens
-      element.addEventListener('click', (e) => {
-        // Track click
-        tracker.trackClick(llm.id);
-        // Use window.open to ensure it opens in new tab
-        e.preventDefault();
-        const opened = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!opened && config.debug.logToConsole) {
-          console.warn(`[LLMShare] Failed to open ${llm.id} link - popup may be blocked`);
-        }
-      });
-    } else {
-      // If URL generation fails, fall back to button behavior
-      const button = document.createElement('button');
-      button.className = element.className;
-      button.setAttribute('type', 'button');
-      // Preserve the aria-label from the element (which is already set for link action)
-      button.setAttribute('aria-label', element.getAttribute('aria-label') || `Open current page in ${llm.label} to ask questions`);
-      // Copy children
-      while (element.firstChild) {
-        button.appendChild(element.firstChild);
-      }
-      if (element.parentNode) {
-        element.parentNode.replaceChild(button, element);
-      }
-      button.addEventListener('click', async (e) => {
-        e.preventDefault();
-        await handleLLMClick(llm, config, tracker, button);
-      });
-      return button;
+    if (element.parentNode) {
+      element.parentNode.replaceChild(button, element);
     }
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await handleLLMClick(llm, config, tracker, button);
+    });
+    return button;
   } else {
     element.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -108,13 +89,14 @@ export function createLLMButton(
  */
 function generateLLMUrl(
   llm: LLMConfig,
-  _config: NormalizedLLMShareConfig
+  _config: NormalizedLLMShareConfig,
+  urlToUse?: string
 ): string | null {
   if (!llm.urlTemplate) {
     return null;
   }
 
-  const currentUrl = window.location.href;
+  const currentUrl = urlToUse || window.location.href;
   const path = window.location.pathname || '/';
   
   // Generate prompt similar to ExploreWithAI component
@@ -245,7 +227,35 @@ async function handleLLMClick(
       }
     }
   } else if (llm.action === 'link' && llm.urlTemplate) {
-    const url = generateLLMUrl(llm, config);
+    // Try to create share URL first (if endpoint available)
+    let finalUrl = currentUrl;
+    
+    if (config.endpoints.share) {
+      try {
+        const pageTitle = typeof document !== 'undefined' ? document.title : undefined;
+        const viewId = tracker.getViewId();
+        const shareUrl = await createShareUrl(
+          currentUrl,
+          config.endpoints.share,
+          config.siteId,
+          config.publicKey,
+          llm.id,
+          pageTitle,
+          viewId
+        );
+        if (shareUrl) {
+          finalUrl = shareUrl;
+          tracker.trackShareCreated(llm.id, shareUrl);
+        } else {
+          tracker.trackFallbackRawUrl(llm.id, currentUrl);
+        }
+      } catch (error) {
+        tracker.trackFallbackRawUrl(llm.id, currentUrl);
+      }
+    }
+
+    // Generate LLM URL with the (possibly masked) URL
+    const url = generateLLMUrl(llm, config, finalUrl);
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }

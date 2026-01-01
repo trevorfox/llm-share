@@ -9,6 +9,7 @@ export declare class EventTracker {
     private unloadHandler;
     constructor(config: NormalizedLLMShareConfig);
     private getAttributionData;
+    getViewId(): string;
     private createBaseEvent;
     private pushToDataLayer;
     emit(event: LLMShareEvent): void;
