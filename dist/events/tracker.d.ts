@@ -8,7 +8,9 @@ export declare class EventTracker {
     private flushTimer;
     private unloadHandler;
     constructor(config: NormalizedLLMShareConfig);
+    private getAttributionData;
     private createBaseEvent;
+    private pushToDataLayer;
     emit(event: LLMShareEvent): void;
     trackImpression(): void;
     trackClick(llmId: string): void;

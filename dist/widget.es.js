@@ -148,7 +148,9 @@ function applyDefaults(config) {
       enabled: config.tracking?.enabled ?? mode !== "standalone",
       batch: config.tracking?.batch ?? true,
       flushIntervalMs: config.tracking?.flushIntervalMs ?? 8e3,
-      respectDNT: config.tracking?.respectDNT ?? true
+      respectDNT: config.tracking?.respectDNT ?? true,
+      pushToDataLayer: config.tracking?.pushToDataLayer ?? false,
+      dataLayerName: config.tracking?.dataLayerName ?? "dataLayer"
     },
     callbacks: {
       onEvent: config.callbacks?.onEvent ?? null,
@@ -259,6 +261,28 @@ class EventTracker {
     this.setupUnloadHandler();
   }
   /**
+   * Collect browser attribution data
+   */
+  getAttributionData() {
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
+      return {};
+    }
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return {
+        referrer: document.referrer || void 0,
+        language: navigator.language || void 0,
+        timezone: timezone || void 0,
+        screen_width: window.screen?.width || void 0,
+        screen_height: window.screen?.height || void 0,
+        viewport_width: window.innerWidth || void 0,
+        viewport_height: window.innerHeight || void 0
+      };
+    } catch (error) {
+      return {};
+    }
+  }
+  /**
    * Create base event object
    */
   createBaseEvent(eventType) {
@@ -269,8 +293,29 @@ class EventTracker {
       site_id: this.config.siteId || null,
       page_url: typeof window !== "undefined" ? window.location.href : "",
       view_id: this.viewId,
-      mode: this.config.mode
+      mode: this.config.mode,
+      ...this.getAttributionData()
     };
+  }
+  /**
+   * Push event to dataLayer if enabled
+   */
+  pushToDataLayer(event) {
+    if (!this.config.tracking.pushToDataLayer || typeof window === "undefined") {
+      return;
+    }
+    try {
+      const dataLayerName = this.config.tracking.dataLayerName;
+      const windowWithDataLayer = window;
+      if (!windowWithDataLayer[dataLayerName]) {
+        windowWithDataLayer[dataLayerName] = [];
+      }
+      windowWithDataLayer[dataLayerName].push(event);
+    } catch (error) {
+      if (this.config.debug.logToConsole) {
+        console.error("[LLMShare] Error pushing to dataLayer:", error);
+      }
+    }
   }
   /**
    * Emit an event
@@ -285,6 +330,7 @@ class EventTracker {
         }
       }
     }
+    this.pushToDataLayer(event);
     if (this.config.debug.logToConsole) {
       console.log("[LLMShare] Event:", event);
     }
@@ -1363,7 +1409,6 @@ class Widget {
         this.startTextHideTimer();
       }
     }
-    this.container.appendChild(buttonContainer);
   }
   /**
    * Append widget to DOM
@@ -1406,6 +1451,9 @@ class Widget {
   }
 }
 function init(config) {
+  if (typeof window !== "undefined" && window.__LLMShareInstance) {
+    return;
+  }
   let normalizedConfig;
   if (config) {
     normalizedConfig = validateConfig(config);
@@ -1437,25 +1485,23 @@ function init(config) {
         delete window.__LLMShareInstance;
       }
     };
+    delete window.__LLMShareLoading;
   }
 }
 if (typeof window !== "undefined") {
   window.LLMShareWidget = {
     init
   };
-  if (window.LLMShare && !window.__LLMShareInitialized) {
+  if (window.LLMShare && !window.__LLMShareLoading) {
     const doInit = () => {
-      if (!window.__LLMShareInitialized) {
-        window.__LLMShareInitialized = true;
+      if (!window.__LLMShareInstance) {
         init();
       }
     };
-    if (typeof document !== "undefined") {
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", doInit);
-      } else {
-        doInit();
-      }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", doInit);
+    } else {
+      doInit();
     }
   }
 }

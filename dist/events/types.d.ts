@@ -9,6 +9,13 @@ export interface BaseEvent {
     llm_id?: string;
     mode: 'hosted' | 'self_hosted' | 'standalone';
     metadata?: Record<string, unknown>;
+    referrer?: string;
+    language?: string;
+    timezone?: string;
+    screen_width?: number;
+    screen_height?: number;
+    viewport_width?: number;
+    viewport_height?: number;
 }
 export interface ImpressionEvent extends BaseEvent {
     event_type: 'impression';

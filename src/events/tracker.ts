@@ -30,6 +30,7 @@ export class EventTracker {
    * Collect browser attribution data
    */
   private getAttributionData(): {
+    referrer?: string;
     language?: string;
     timezone?: string;
     screen_width?: number;
@@ -44,6 +45,7 @@ export class EventTracker {
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       return {
+        referrer: document.referrer || undefined,
         language: navigator.language || undefined,
         timezone: timezone || undefined,
         screen_width: window.screen?.width || undefined,

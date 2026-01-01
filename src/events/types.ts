@@ -20,6 +20,7 @@ export interface BaseEvent {
   mode: 'hosted' | 'self_hosted' | 'standalone';
   metadata?: Record<string, unknown>;
   // Attribution data (browser-available data)
+  referrer?: string; // document.referrer (the page that referred the user)
   language?: string; // navigator.language (e.g., "en-US")
   timezone?: string; // Intl.DateTimeFormat().resolvedOptions().timeZone (e.g., "America/Los_Angeles")
   screen_width?: number; // window.screen.width

@@ -51,6 +51,8 @@ export interface TrackingConfig {
     batch?: boolean;
     flushIntervalMs?: number;
     respectDNT?: boolean;
+    pushToDataLayer?: boolean;
+    dataLayerName?: string;
 }
 export interface CallbacksConfig {
     onEvent?: ((event: LLMShareEvent) => void) | null;
