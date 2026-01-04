@@ -83,6 +83,7 @@ declare global {
     LLMShare?: LLMShareConfig;
     LLMShareWidget?: {
       init: (config?: LLMShareConfig) => void;
+      initAsync?: (config?: LLMShareConfig) => Promise<void>;
     };
     __LLMShareInstance?: {
       widget: Widget;

@@ -32,6 +32,7 @@ export interface EndpointsConfig {
   collector?: string | null;
   share?: string | null;
   redirectBase?: string | null;
+  widgetConfig?: string | null; // Optional: custom API endpoint for fetching widget config
 }
 
 export type InlineAlignment = 'left' | 'center' | 'right';
