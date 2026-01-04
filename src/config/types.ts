@@ -58,6 +58,7 @@ export interface WidgetConfig {
     position?: 'left' | 'right' | 'top';
     hideDelay?: number;
   };
+  customCSS?: string;
 }
 
 export interface ContentConfig {

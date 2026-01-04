@@ -382,7 +382,14 @@ export function injectStyles(config: NormalizedLLMShareConfig): void {
   // Create and inject style element
   const style = document.createElement('style');
   style.id = styleId;
-  style.textContent = generateStyles(config);
+  
+  // Combine generated styles with custom CSS
+  let styles = generateStyles(config);
+  if (config.widget.customCSS) {
+    styles += '\n\n/* Custom CSS */\n' + config.widget.customCSS;
+  }
+  
+  style.textContent = styles;
   document.head.appendChild(style);
 }
 
