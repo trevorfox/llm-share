@@ -27,6 +27,34 @@ export class EventTracker {
   }
 
   /**
+   * Check if tracking should be allowed for the current domain
+   * Prevents preview widgets on getsourced.ai from tracking stats
+   */
+  private isTrackingAllowed(): boolean {
+    if (!this.config.tracking.enabled) {
+      return false;
+    }
+
+    // Check if we're on getsourced.ai domain
+    if (typeof window === 'undefined') {
+      return true; // Server-side, allow (will be validated by backend)
+    }
+
+    const hostname = window.location.hostname;
+    const isGetsourcedDomain = hostname === 'getsourced.ai' || hostname.endsWith('.getsourced.ai');
+    
+    if (!isGetsourcedDomain) {
+      return true; // Not on getsourced.ai, allow tracking
+    }
+
+    // On getsourced.ai domain - check if it's explicitly allowed
+    // Since we don't have access to allowed_domains in the widget,
+    // we disable tracking by default for preview widgets
+    // The backend will also validate and reject these requests
+    return false;
+  }
+
+  /**
    * Collect browser attribution data
    */
   private getAttributionData(): {
@@ -133,8 +161,8 @@ export class EventTracker {
       console.log('[LLMShare] Event:', event);
     }
 
-    // Queue for batch send if tracking enabled
-    if (this.config.tracking.enabled && this.config.endpoints.collector) {
+    // Queue for batch send if tracking enabled and domain is allowed
+    if (this.isTrackingAllowed() && this.config.endpoints.collector) {
       this.eventQueue.push(event);
       this.scheduleFlush();
     }
