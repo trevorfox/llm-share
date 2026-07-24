@@ -180,6 +180,32 @@ window.LLMShare = {
 };
 ```
 
+## Self-Hosting
+
+llm-share is backend-agnostic. By default (`mode: "hosted"`) it talks to the hosted GetSourced collector, but `mode: "self_hosted"` plus the `endpoints` config points the widget at any backend that implements this three-endpoint contract:
+
+### The collector API contract
+
+**`POST {collector}`** — batch event ingestion. Request:
+
+```json
+{
+  "site_id": "pub_123",
+  "public_key": "pk_abc",
+  "events": [ { "event_type": "impression", "ts": "2026-01-01T00:00:00.000Z", "page_url": "https://…", "view_id": "<uuid>", "mode": "hosted", "referrer": null, "language": "en-US", "timezone": "…", "screen_width": 0, "screen_height": 0, "viewport_width": 0, "viewport_height": 0 } ]
+}
+```
+
+Responses: `200 {"success": true, "inserted": n}`; `400` on validation errors (1–100 events per batch); `401` invalid credentials; `403` origin not in the site's allow-list.
+
+**`POST {share}`** — create a tracked share link. Request: `{"url", "site_id", "public_key", "llm_id", "page_title?", "view_id?"}`. Response: `201 {"token", "slug", "share_url", "redirect_base"}`.
+
+**`GET {redirectBase}{token}/{slug?}`** — resolve a share link: logs a `resolve` event and `302`s to the destination URL. Unknown/expired tokens return `404`.
+
+There is also an optional remote-config endpoint (`GET /api/v1/widget-config?siteId=…&publicKey=…`) that returns a config object merged as `{siteId, publicKey, mode, …widget_config}` — useful when you want server-managed widget settings.
+
+Origin validation, credentials, and batching semantics are defined by the reference implementation; the hosted service at `getsourced.ai` is one implementation of this contract, not a dependency.
+
 ## Examples
 
 - **[index.html](./index.html)** - Interactive config builder tool to generate your configuration code
