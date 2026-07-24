@@ -37,7 +37,7 @@ export async function fetchConfigFromAPI(
   }
 
   // Determine API endpoint
-  const endpoint = apiEndpoint || 'https://c.getsourced.ai/api/v1/widget-config';
+  const endpoint = apiEndpoint || 'https://www.getsourced.ai/api/v1/widget-config';
   const url = `${endpoint}?siteId=${encodeURIComponent(siteId)}&publicKey=${encodeURIComponent(publicKey)}`;
 
   try {

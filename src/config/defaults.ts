@@ -104,8 +104,8 @@ function getDefaultEndpoints(mode: WidgetMode): {
   if (mode === 'hosted') {
     // Default to your SaaS endpoints (can be overridden)
     return {
-      collector: 'https://c.getsourced.ai/v1/events',
-      share: 'https://c.getsourced.ai/v1/share',
+      collector: 'https://www.getsourced.ai/v1/events',
+      share: 'https://www.getsourced.ai/v1/share',
       redirectBase: 'https://t.getsourced.ai/s/',
     };
   }
