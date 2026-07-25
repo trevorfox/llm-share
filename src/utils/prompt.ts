@@ -9,7 +9,7 @@ function extractDomain(url: string): string {
     return urlObj.hostname.replace(/^www\./, '');
   } catch {
     // Fallback: try to extract domain from string
-    const match = url.match(/https?:\/\/(?:www\.)?([^\/]+)/);
+    const match = url.match(/https?:\/\/(?:www\.)?([^/]+)/);
     return match ? match[1] : url;
   }
 }
