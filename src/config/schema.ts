@@ -14,6 +14,11 @@ export function validateConfig(
 
   const configObj = config as LLMShareConfig;
 
+  // `widget: false` disables the widget entirely; there's nothing to
+  // validate in that case, so narrow to the appearance-config shape (or
+  // undefined) before running the widget-specific checks below.
+  const widgetConfig = configObj.widget === false ? undefined : configObj.widget;
+
   // Validate mode if provided
   if (configObj.mode) {
     const validModes = ['hosted', 'self_hosted', 'standalone'];
@@ -25,7 +30,7 @@ export function validateConfig(
   }
 
   // Validate widget placement if provided
-  if (configObj.widget?.placement) {
+  if (widgetConfig?.placement) {
     const validPlacements = [
       'center-right',
       'center-left',
@@ -33,39 +38,39 @@ export function validateConfig(
       'bottom-left',
       'inline',
     ];
-    if (!validPlacements.includes(configObj.widget.placement)) {
+    if (!validPlacements.includes(widgetConfig!.placement)) {
       throw new Error(
-        `Invalid placement: ${configObj.widget.placement}. Must be one of: ${validPlacements.join(', ')}`
+        `Invalid placement: ${widgetConfig!.placement}. Must be one of: ${validPlacements.join(', ')}`
       );
     }
   }
   
   // Validate textLabel position if provided
-  if (configObj.widget?.textLabel?.position) {
+  if (widgetConfig?.textLabel?.position) {
     const validPositions = ['left', 'right', 'top'];
-    if (!validPositions.includes(configObj.widget.textLabel.position)) {
+    if (!validPositions.includes(widgetConfig!.textLabel!.position)) {
       throw new Error(
-        `Invalid textLabel position: ${configObj.widget.textLabel.position}. Must be one of: ${validPositions.join(', ')}`
+        `Invalid textLabel position: ${widgetConfig!.textLabel!.position}. Must be one of: ${validPositions.join(', ')}`
       );
     }
   }
 
   // Validate widget style if provided
-  if (configObj.widget?.style) {
+  if (widgetConfig?.style) {
     const validStyles = ['pill', 'square', 'minimal', 'custom'];
-    if (!validStyles.includes(configObj.widget.style)) {
+    if (!validStyles.includes(widgetConfig!.style)) {
       throw new Error(
-        `Invalid style: ${configObj.widget.style}. Must be one of: ${validStyles.join(', ')}`
+        `Invalid style: ${widgetConfig!.style}. Must be one of: ${validStyles.join(', ')}`
       );
     }
   }
 
   // Validate widget theme if provided
-  if (configObj.widget?.theme) {
+  if (widgetConfig?.theme) {
     const validThemes = ['auto', 'light', 'dark'];
-    if (!validThemes.includes(configObj.widget.theme)) {
+    if (!validThemes.includes(widgetConfig!.theme)) {
       throw new Error(
-        `Invalid theme: ${configObj.widget.theme}. Must be one of: ${validThemes.join(', ')}`
+        `Invalid theme: ${widgetConfig!.theme}. Must be one of: ${validThemes.join(', ')}`
       );
     }
   }

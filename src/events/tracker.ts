@@ -6,6 +6,7 @@ import type {
   ShareCreatedEvent,
   FallbackRawUrlEvent,
   ErrorEvent,
+  PageviewEvent,
 } from './types';
 import type { NormalizedLLMShareConfig } from '../config/types';
 import { generateUUID } from '../utils/uuid';
@@ -175,6 +176,20 @@ export class EventTracker {
     const event: ImpressionEvent = {
       ...this.createBaseEvent('impression'),
     } as ImpressionEvent;
+    this.emit(event);
+  }
+
+  /**
+   * Track pageview (detect module — fired once on init when `detect` is
+   * enabled, independent of whether the widget UI renders). No new
+   * transport: this goes through the same queue/flush pipeline as every
+   * other event, and is subject to the same tracking-allowed / DNT rules.
+   */
+  trackPageview(): void {
+    const event: PageviewEvent = {
+      ...this.createBaseEvent('pageview'),
+      referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+    } as PageviewEvent;
     this.emit(event);
   }
 

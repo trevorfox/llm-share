@@ -83,24 +83,41 @@ export function mergeConfigs(
   // Check if server wants to override client config
   const overrideClientConfig = (apiConfig as LLMShareConfig & { overrideClientConfig?: boolean }).overrideClientConfig === true;
 
+  // `widget: false` (suppress all widget UI) doesn't deep-merge like the
+  // rest of the widget config — narrow it out of the object-shaped merges
+  // below and instead decide, per branch, whether the merge's "winning"
+  // side's explicit false should propagate through untouched.
+  const inlineWidget = inlineConfig.widget === false ? undefined : inlineConfig.widget;
+  const apiWidget = apiConfig.widget === false ? undefined : apiConfig.widget;
+
   if (overrideClientConfig) {
     // Server config takes precedence - merge client into server (client fills gaps)
+    // If the server explicitly disables the widget, honor that; otherwise
+    // fall back to the client's explicit disable if the server didn't say
+    // anything about `widget` at all.
+    const widgetDisabled =
+      apiConfig.widget !== undefined
+        ? apiConfig.widget === false
+        : inlineConfig.widget === false;
+
     return {
       ...inlineConfig,
       ...apiConfig,
       // Deep merge nested objects (server overrides client)
-      widget: {
-        ...inlineConfig.widget,
-        ...apiConfig.widget,
-        textLabel: {
-          ...inlineConfig.widget?.textLabel,
-          ...apiConfig.widget?.textLabel,
-        },
-        showOn: {
-          ...inlineConfig.widget?.showOn,
-          ...apiConfig.widget?.showOn,
-        },
-      },
+      widget: widgetDisabled
+        ? false
+        : {
+            ...inlineWidget,
+            ...apiWidget,
+            textLabel: {
+              ...inlineWidget?.textLabel,
+              ...apiWidget?.textLabel,
+            },
+            showOn: {
+              ...inlineWidget?.showOn,
+              ...apiWidget?.showOn,
+            },
+          },
       content: {
         ...inlineConfig.content,
         ...apiConfig.content,
@@ -126,22 +143,32 @@ export function mergeConfigs(
     };
   } else {
     // Default: Client config takes precedence - merge server into client (client overrides server)
+    // If the client explicitly disables the widget, honor that; otherwise
+    // fall back to the server's explicit disable if the client didn't say
+    // anything about `widget` at all.
+    const widgetDisabled =
+      inlineConfig.widget !== undefined
+        ? inlineConfig.widget === false
+        : apiConfig.widget === false;
+
     return {
       ...apiConfig,
       ...inlineConfig,
       // Deep merge nested objects (client overrides server)
-      widget: {
-        ...apiConfig.widget,
-        ...inlineConfig.widget,
-        textLabel: {
-          ...apiConfig.widget?.textLabel,
-          ...inlineConfig.widget?.textLabel,
-        },
-        showOn: {
-          ...apiConfig.widget?.showOn,
-          ...inlineConfig.widget?.showOn,
-        },
-      },
+      widget: widgetDisabled
+        ? false
+        : {
+            ...apiWidget,
+            ...inlineWidget,
+            textLabel: {
+              ...apiWidget?.textLabel,
+              ...inlineWidget?.textLabel,
+            },
+            showOn: {
+              ...apiWidget?.showOn,
+              ...inlineWidget?.showOn,
+            },
+          },
       content: {
         ...apiConfig.content,
         ...inlineConfig.content,

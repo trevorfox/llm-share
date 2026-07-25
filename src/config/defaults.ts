@@ -124,7 +124,13 @@ export function applyDefaults(
 ): NormalizedLLMShareConfig {
   const mode = detectMode(config);
   const defaultEndpoints = getDefaultEndpoints(mode);
-  
+
+  // `widget: false` suppresses widget rendering; treat it as "no appearance
+  // overrides" for the purposes of computing widget style defaults below,
+  // and separately track whether the widget should render at all.
+  const widgetEnabled = config.widget !== false;
+  const widgetConfig = config.widget === false ? undefined : config.widget;
+
   // Get action (default to 'link')
   const action: LLMAction = config.action ?? 'link';
   
@@ -149,27 +155,28 @@ export function applyDefaults(
         null,
     },
     widget: {
-      placement: config.widget?.placement ?? 'bottom-left',
-      style: config.widget?.style ?? 'minimal',
-      theme: config.widget?.theme ?? 'auto',
-      zIndex: config.widget?.zIndex ?? 9999,
-      offsetPx: config.widget?.offsetPx ?? 16,
-      backgroundOpacity: config.widget?.backgroundOpacity ?? 0.5,
-      inlineSelector: config.widget?.inlineSelector ?? null,
-      inlineAlignment: config.widget?.inlineAlignment ?? 'left',
-      showOnMobile: config.widget?.showOnMobile ?? true,
+      placement: widgetConfig?.placement ?? 'bottom-left',
+      style: widgetConfig?.style ?? 'minimal',
+      theme: widgetConfig?.theme ?? 'auto',
+      zIndex: widgetConfig?.zIndex ?? 9999,
+      offsetPx: widgetConfig?.offsetPx ?? 16,
+      backgroundOpacity: widgetConfig?.backgroundOpacity ?? 0.5,
+      inlineSelector: widgetConfig?.inlineSelector ?? null,
+      inlineAlignment: widgetConfig?.inlineAlignment ?? 'left',
+      showOnMobile: widgetConfig?.showOnMobile ?? true,
       showOn: {
-        pathPrefix: config.widget?.showOn?.pathPrefix ?? '/',
-        scrollDistance: config.widget?.showOn?.scrollDistance ?? 200,
-        showOnScroll: config.widget?.showOn?.showOnScroll ?? false,
+        pathPrefix: widgetConfig?.showOn?.pathPrefix ?? '/',
+        scrollDistance: widgetConfig?.showOn?.scrollDistance ?? 200,
+        showOnScroll: widgetConfig?.showOn?.showOnScroll ?? false,
       },
       textLabel: {
-        enabled: config.widget?.textLabel?.enabled ?? false,
-        text: config.widget?.textLabel?.text ?? 'Explore with AI',
-        position: config.widget?.textLabel?.position ?? 'top',
-        hideDelay: config.widget?.textLabel?.hideDelay ?? 3000,
+        enabled: widgetConfig?.textLabel?.enabled ?? false,
+        text: widgetConfig?.textLabel?.text ?? 'Explore with AI',
+        position: widgetConfig?.textLabel?.position ?? 'top',
+        hideDelay: widgetConfig?.textLabel?.hideDelay ?? 3000,
       },
     },
+    widgetEnabled,
     content: {
       prompt:
         config.content?.prompt ??
@@ -193,6 +200,7 @@ export function applyDefaults(
     debug: {
       logToConsole: config.debug?.logToConsole ?? false,
     },
+    detect: config.detect ?? true,
   };
 }
 
