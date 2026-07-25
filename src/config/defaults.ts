@@ -188,7 +188,12 @@ export function applyDefaults(
     },
     llms,
     tracking: {
-      enabled: config.tracking?.enabled ?? mode !== 'standalone',
+      // Tracking is off by default in standalone mode, but an explicit
+      // `detect: true` is an opt-in to sending pageviews — honor it rather
+      // than silently dropping the event the caller asked for.
+      enabled:
+        config.tracking?.enabled ??
+        (mode !== 'standalone' || config.detect === true),
       batch: config.tracking?.batch ?? true,
       flushIntervalMs: config.tracking?.flushIntervalMs ?? 8000,
       respectDNT: config.tracking?.respectDNT ?? true,

@@ -220,6 +220,51 @@ describe('Detect module', () => {
     expect(body.events).toHaveLength(1);
     expect(body.events[0].event_type).toBe('pageview');
   });
+
+  it('standalone opt-in without an explicit tracking block still sends the pageview (detect:true implies tracking)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({}),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    // The README documents `detect: true` in standalone/self_hosted as the
+    // opt-in for "pageview events sent to your own collector" — with no
+    // mention of also having to flip tracking.enabled. Standalone defaults
+    // tracking off, so without the opt-in carve-out this silently no-ops.
+    init({
+      mode: 'standalone',
+      detect: true,
+      widget: false,
+      endpoints: { collector: 'https://collector.example.com/events' },
+      tracking: { batch: false, respectDNT: false },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(body.events[0].event_type).toBe('pageview');
+  });
+
+  it('an explicit tracking.enabled:false still wins over a detect opt-in', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    init({
+      mode: 'standalone',
+      detect: true,
+      widget: false,
+      endpoints: { collector: 'https://collector.example.com/events' },
+      tracking: { enabled: false, batch: false },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 /**
