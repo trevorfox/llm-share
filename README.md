@@ -127,6 +127,8 @@ window.LLMShare = {
   
   widget: {
     placement: "center-right",  // center-right | center-left | bottom-right | bottom-left | inline
+                                // center-* render as a vertical side rail (stacked
+                                // icons, no text label); the rest stay horizontal
     style: "pill",              // pill | square | minimal | custom
     theme: "auto",              // auto | light | dark
     zIndex: 999999,

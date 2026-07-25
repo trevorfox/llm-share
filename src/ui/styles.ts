@@ -181,7 +181,31 @@ export function generateStyles(config: NormalizedLLMShareConfig): string {
       margin: 0;
       padding: 0;
     }
-    
+
+    /* Side-rail placements hug the left or right edge at mid-height, where a
+       vertical stack of actions reads better than a horizontal strip and
+       intrudes less on the page's text column. Height must go auto or the
+       column overflows the 24px single-row height. */
+    .llm-share-widget.placement-center-left:not(.inline) .llm-share-buttons-wrapper,
+    .llm-share-widget.placement-center-right:not(.inline) .llm-share-buttons-wrapper {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .llm-share-widget.placement-center-left:not(.inline) .llm-share-widget-container,
+    .llm-share-widget.placement-center-right:not(.inline) .llm-share-widget-container {
+      align-items: center;
+    }
+
+    /* The text label is a horizontal affordance — a nowrap phrase beside the
+       actions. In a rail it forces the container three times wider than the
+       icon column and strands the stack in whitespace, so it is dropped here;
+       each button keeps its aria-label and title. */
+    .llm-share-widget.placement-center-left:not(.inline) .llm-share-text-label,
+    .llm-share-widget.placement-center-right:not(.inline) .llm-share-text-label {
+      display: none;
+    }
+
     .llm-share-widget.inline {
       position: static;
       display: inline-block;
