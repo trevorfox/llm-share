@@ -209,6 +209,11 @@ window.LLMShare = {
 To disable detection entirely (and keep only the widget's own
 impression/click events), set `detect: false`.
 
+Note: in hosted mode with only `siteId`/`publicKey`, the library still
+fetches remote widget-config before the pageview fires (one extra request
+per load; very fast bounces may be missed). Set `mode: "self_hosted"` or
+`endpoints.widgetConfig` to skip or redirect that fetch.
+
 ## Self-Hosting
 
 llm-share is backend-agnostic. By default (`mode: "hosted"`) it talks to the hosted GetSourced collector, but `mode: "self_hosted"` plus the `endpoints` config points the widget at any backend that implements this three-endpoint contract:
