@@ -1,6 +1,6 @@
 {
   "name": "@trevorfox/llm-share",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Drop-in JavaScript widget for sending pages to LLMs",
   "type": "module",
   "main": "./dist/widget.umd.js",
