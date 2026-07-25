@@ -224,6 +224,10 @@
       <div class="info-box" style="margin-bottom: 20px;">
         See how the widget looks with your current configuration. The widget updates automatically as you change settings.
       </div>
+      <div id="detect-only-note" style="display: none; padding: 12px 16px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 4px; margin-bottom: 20px; color: #6d4c41; font-size: 14px;">
+        <strong>Widget UI hidden.</strong> With <code>widget: false</code> nothing renders — the
+        library only fires events. There is nothing to preview.
+      </div>
       <div id="widget-preview-inline" style="min-height: 60px; padding: 20px; background: #f9f9f9; border-radius: 4px; border: 1px solid #e5e5e5; display: none;">
         <p style="color: #666; margin: 0;">Inline widget will appear here</p>
       </div>
@@ -373,6 +377,27 @@
         </div>
       </div>
 
+      <!-- Detection Settings -->
+      <div class="form-group">
+        <div class="checkbox-group" style="margin-bottom: 10px;">
+          <input type="checkbox" id="detectEnabled">
+          <label for="detectEnabled" style="margin: 0; font-weight: 500;">Send pageview events (detect)</label>
+        </div>
+        <small style="color: #666; font-size: 12px; display: block; margin-bottom: 10px;">
+          Fires one pageview event (page URL + referrer) per load through the same
+          event pipeline as the widget's own events. On by default in Hosted mode;
+          opt-in for Standalone and Self-Hosted, which need an <code>endpoints.collector</code> to send to.
+        </small>
+        <div class="checkbox-group" style="margin-bottom: 10px;">
+          <input type="checkbox" id="widgetHidden">
+          <label for="widgetHidden" style="margin: 0; font-weight: 500;">Hide widget UI (detection only)</label>
+        </div>
+        <small style="color: #666; font-size: 12px; display: block;">
+          Sets <code>widget: false</code> — no buttons render, but events still fire.
+          Referrer analytics without the "send to AI" UI.
+        </small>
+      </div>
+
       <!-- LLMs Selection -->
       <div class="form-group">
         <label>LLMs:</label>
@@ -450,11 +475,14 @@
     let widgetInstance = null;
 
     // Mode change handler
+    let currentMode = DEFAULTS.mode;
     document.querySelectorAll('input[name="mode"]').forEach(radio => {
       radio.addEventListener('change', () => {
         const mode = radio.value;
         document.getElementById('hosted-fields').style.display = mode === 'hosted' ? 'block' : 'none';
         document.getElementById('self-hosted-fields').style.display = mode === 'self_hosted' ? 'block' : 'none';
+        syncDetectDefaultForMode(currentMode, mode);
+        currentMode = mode;
         updateCode();
       });
     });
@@ -466,6 +494,38 @@
       document.getElementById('inline-alignment-field').style.display = placement === 'inline' ? 'block' : 'none';
       updateCode();
     });
+
+    // Detection handlers
+    document.getElementById('detectEnabled').addEventListener('change', updateCode);
+    document.getElementById('widgetHidden').addEventListener('change', () => {
+      syncDetectFields();
+      updateCode();
+    });
+
+    // Keep the detect checkbox showing the default the selected mode implies:
+    // on in hosted, off in standalone/self_hosted. Only moves the box while it
+    // still matches the old mode's default, so an explicit choice is not
+    // overwritten.
+    function syncDetectDefaultForMode(previousMode, newMode) {
+      const box = document.getElementById('detectEnabled');
+      if (box.checked === (previousMode === 'hosted')) {
+        box.checked = newMode === 'hosted';
+      }
+      syncDetectFields();
+    }
+
+    // `widget: false` makes every appearance control moot — grey them out
+    // rather than letting people tune styling that will not render.
+    function syncDetectFields() {
+      const hidden = document.getElementById('widgetHidden').checked;
+      document.getElementById('detect-only-note').style.display = hidden ? 'block' : 'none';
+      ['placement', 'style', 'theme', 'offsetPx', 'backgroundOpacity', 'textLabelEnabled',
+       'textLabelText', 'textLabelPosition', 'textLabelHideDelay', 'inlineSelector',
+       'inlineAlignment'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = hidden;
+      });
+    }
 
     // Text label enabled handler
     document.getElementById('textLabelEnabled').addEventListener('change', () => {
@@ -518,12 +578,14 @@
       const textLabelPosition = document.getElementById('textLabelPosition').value;
       const textLabelHideDelay = parseInt(document.getElementById('textLabelHideDelay').value) || 3000;
       const inlineAlignment = document.getElementById('inlineAlignment').value;
+      const detectEnabled = document.getElementById('detectEnabled').checked;
+      const widgetHidden = document.getElementById('widgetHidden').checked;
 
       // Build base config object
       const config = {
         mode: mode,
         llms: llms,
-        widget: {
+        widget: widgetHidden ? false : {
           placement: placement,
           style: style,
           theme: theme,
@@ -536,6 +598,7 @@
             hideDelay: textLabelHideDelay,
           }
         },
+        detect: detectEnabled,
         debug: { logToConsole: false }
       };
 
@@ -554,8 +617,9 @@
         config.widgetUrl = widgetUrl;
       }
 
-      // Handle inline placement
-      if (placement === 'inline') {
+      // Handle inline placement (skipped when the widget UI is suppressed —
+      // config.widget is `false` there, not an object to hang settings off)
+      if (placement === 'inline' && config.widget) {
         if (inlineSelector) {
           config.widget.inlineSelector = inlineSelector;
         } else {
@@ -585,6 +649,8 @@
       const textLabelPosition = document.getElementById('textLabelPosition').value;
       const textLabelHideDelay = parseInt(document.getElementById('textLabelHideDelay').value) || 3000;
       const inlineAlignment = document.getElementById('inlineAlignment').value;
+      const detectEnabled = document.getElementById('detectEnabled').checked;
+      const widgetHidden = document.getElementById('widgetHidden').checked;
 
       const config = {};
 
@@ -659,8 +725,18 @@
         hasWidgetConfig = true;
       }
 
-      if (hasWidgetConfig) {
+      // `widget: false` is not a default, so it always ships — and it replaces
+      // the appearance object entirely rather than merging with it.
+      if (widgetHidden) {
+        config.widget = false;
+      } else if (hasWidgetConfig) {
         config.widget = widgetConfig;
+      }
+
+      // detect defaults to true in hosted mode and false everywhere else, so
+      // only emit it when the user's choice differs from that.
+      if (detectEnabled !== (mode === 'hosted')) {
+        config.detect = detectEnabled;
       }
 
       // LLMs
@@ -882,6 +958,11 @@ window.LLMShare = ${configJson};
       
       const textLabelEnabled = document.getElementById('textLabelEnabled').checked;
       document.getElementById('textLabelFields').style.display = textLabelEnabled ? 'block' : 'none';
+
+      // Default mode is standalone, where detect is opt-in — so the box starts
+      // unchecked and the appearance controls start enabled.
+      document.getElementById('detectEnabled').checked = DEFAULTS.mode === 'hosted';
+      syncDetectFields();
     }
 
     // Load widget bundle and initialize preview
