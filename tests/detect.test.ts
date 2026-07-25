@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { init } from '../src/widget';
+import { init, initAsync } from '../src/widget';
+import { mergeConfigs } from '../src/config/api-config';
+import { validateConfig } from '../src/config/schema';
 import type { LLMShareEvent } from '../src/events/types';
+import type { LLMShareConfig } from '../src/config/types';
 
 /**
  * Tests for the `detect` module: the widget-independent pageview event
@@ -197,5 +200,122 @@ describe('Detect module', () => {
     const body = JSON.parse(requestInit.body as string);
     expect(body.events).toHaveLength(1);
     expect(body.events[0].event_type).toBe('pageview');
+  });
+});
+
+/**
+ * Regression coverage for the `mergeConfigs` seam noted in the Task 3
+ * report: `widget: false` must survive the hosted-mode "minimal config"
+ * path — siteId/publicKey only, `mode` unset or 'hosted' — where
+ * `isMinimalConfig()` triggers a remote widget-config fetch and the result
+ * is deep-merged with the inline config in `mergeConfigs`. Both merge
+ * branches (`overrideClientConfig` false/absent = client wins, and
+ * `overrideClientConfig: true` = server wins) must not silently coerce an
+ * explicit `false` back into an enabled widget object.
+ */
+describe('detect + widget:false across the hosted remote-config merge path', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    delete (window as any).__LLMShareInstance;
+    delete (window as any).__LLMShareLoading;
+    delete (window as any).LLMShare;
+  });
+
+  afterEach(() => {
+    const instance = (window as any).__LLMShareInstance;
+    if (instance) {
+      instance.destroy();
+    }
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  describe('init-level (mode unset + siteId/publicKey => isMinimalConfig => remote fetch)', () => {
+    it('client-wins merge branch: widget stays suppressed even when the remote config returns a real widget object', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            widget: { placement: 'bottom-right', style: 'pill', theme: 'dark' },
+          }),
+        })
+      );
+
+      await initAsync({
+        siteId: 'pub_123',
+        publicKey: 'pk_abc',
+        widget: false,
+      });
+
+      expect(document.querySelector('.llm-share-widget')).toBeNull();
+      expect(window.__LLMShareInstance).toBeDefined();
+      expect(window.__LLMShareInstance?.widget).toBeNull();
+    });
+
+    it('server-wins merge branch (overrideClientConfig: true): widget stays suppressed when the remote config does not opine on widget', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            overrideClientConfig: true,
+            content: { prompt: 'Server-provided prompt' },
+          }),
+        })
+      );
+
+      await initAsync({
+        mode: 'hosted',
+        siteId: 'pub_123',
+        publicKey: 'pk_abc',
+        widget: false,
+      });
+
+      expect(document.querySelector('.llm-share-widget')).toBeNull();
+      expect(window.__LLMShareInstance).toBeDefined();
+      expect(window.__LLMShareInstance?.widget).toBeNull();
+    });
+  });
+
+  describe('mergeConfigs-level (direct, no network)', () => {
+    it('client-wins branch: merged config keeps widget:false when apiConfig sets a widget object', () => {
+      const inlineConfig: LLMShareConfig = {
+        siteId: 'pub_123',
+        publicKey: 'pk_abc',
+        widget: false,
+      };
+      const apiConfig: LLMShareConfig = {
+        widget: { placement: 'bottom-right', style: 'pill' },
+      };
+
+      const merged = mergeConfigs(apiConfig, inlineConfig);
+      expect(merged.widget).toBe(false);
+
+      const normalized = validateConfig(merged);
+      expect(normalized.widgetEnabled).toBe(false);
+    });
+
+    it("server-wins branch (overrideClientConfig: true): merged config falls back to the client's widget:false when apiConfig omits widget", () => {
+      const inlineConfig: LLMShareConfig = {
+        siteId: 'pub_123',
+        publicKey: 'pk_abc',
+        widget: false,
+      };
+      const apiConfig: LLMShareConfig & { overrideClientConfig: boolean } = {
+        overrideClientConfig: true,
+        content: { prompt: 'Server-provided prompt' },
+      };
+
+      const merged = mergeConfigs(apiConfig, inlineConfig);
+      expect(merged.widget).toBe(false);
+
+      const normalized = validateConfig(merged);
+      expect(normalized.widgetEnabled).toBe(false);
+    });
   });
 });
