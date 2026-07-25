@@ -185,8 +185,9 @@ window.LLMShare = {
 `detect` fires a single `pageview` event (page URL + referrer, plus the same
 attribution fields — language, timezone, screen/viewport — every other
 event carries) through the existing event pipeline on init. It defaults to
-`true`, so every existing integration picks it up automatically alongside
-the widget. It respects the same `tracking.enabled` / `tracking.respectDNT`
+`true` only in `hosted` (SaaS) mode; in `standalone` and `self_hosted`
+modes detection is **opt-in** — set `detect: true` explicitly if you want
+pageview events sent to your own collector. It respects the same `tracking.enabled` / `tracking.respectDNT`
 rules as every other event — no separate consent path, no new transport.
 
 No classification happens client-side: the widget only reports what the

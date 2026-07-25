@@ -41,11 +41,12 @@ describe('Detect module', () => {
       .filter((evt: LLMShareEvent) => evt.event_type === 'pageview');
   }
 
-  it('fires exactly one pageview event on init when detect defaults on (legacy config)', () => {
+  it('fires exactly one pageview event on init when detect is enabled', () => {
     const onEvent = vi.fn();
 
     init({
       mode: 'standalone',
+      detect: true,
       tracking: { enabled: true },
       callbacks: { onEvent },
     });
@@ -69,6 +70,7 @@ describe('Detect module', () => {
 
     init({
       mode: 'standalone',
+      detect: true,
       tracking: { enabled: true },
       callbacks: { onEvent },
     });
@@ -106,6 +108,7 @@ describe('Detect module', () => {
 
     init({
       mode: 'standalone',
+      detect: true,
       widget: false,
       tracking: { enabled: true },
       callbacks: { onEvent },
@@ -116,7 +119,7 @@ describe('Detect module', () => {
     expect(window.__LLMShareInstance?.tracker).toBeDefined();
   });
 
-  it('renders the widget AND fires the pageview for a legacy config that sets neither key', () => {
+  it('legacy standalone config (neither key set): widget renders, NO pageview — detection is opt-in outside hosted mode', () => {
     const onEvent = vi.fn();
 
     init({
@@ -126,7 +129,20 @@ describe('Detect module', () => {
     });
 
     expect(document.querySelector('.llm-share-widget')).not.toBeNull();
-    expect(pageviewEvents(onEvent)).toHaveLength(1);
+    expect(pageviewEvents(onEvent)).toHaveLength(0);
+  });
+
+  it('self_hosted mode also defaults detect off', () => {
+    const onEvent = vi.fn();
+
+    init({
+      mode: 'self_hosted',
+      endpoints: { collector: 'https://collector.example.com/events' },
+      tracking: { enabled: true, batch: true },
+      callbacks: { onEvent },
+    });
+
+    expect(pageviewEvents(onEvent)).toHaveLength(0);
   });
 
   it('does not send the pageview over the network when DNT is enabled and respectDNT is true', async () => {
@@ -142,6 +158,7 @@ describe('Detect module', () => {
 
       init({
         mode: 'standalone',
+        detect: true,
         widget: false,
         endpoints: { collector: 'https://collector.example.com/events' },
         tracking: { enabled: true, batch: false, respectDNT: true },
@@ -166,6 +183,7 @@ describe('Detect module', () => {
 
     init({
       mode: 'standalone',
+      detect: true,
       widget: false,
       endpoints: { collector: 'https://collector.example.com/events' },
       tracking: { enabled: false, batch: false },
@@ -187,6 +205,7 @@ describe('Detect module', () => {
 
     init({
       mode: 'standalone',
+      detect: true,
       widget: false,
       endpoints: { collector: 'https://collector.example.com/events' },
       tracking: { enabled: true, batch: false, respectDNT: false },
@@ -231,6 +250,32 @@ describe('detect + widget:false across the hosted remote-config merge path', () 
   });
 
   describe('init-level (mode unset + siteId/publicKey => isMinimalConfig => remote fetch)', () => {
+    it('hosted mode defaults detect ON: pageview fires with no detect key set', async () => {
+      const onEvent = vi.fn();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({}),
+        })
+      );
+
+      await initAsync({
+        siteId: 'pub_123',
+        publicKey: 'pk_abc',
+        widget: false,
+        tracking: { enabled: true, batch: true },
+        callbacks: { onEvent },
+      });
+
+      const pageviews = onEvent.mock.calls
+        .map(([evt]: [LLMShareEvent]) => evt)
+        .filter((evt: LLMShareEvent) => evt.event_type === 'pageview');
+      expect(pageviews).toHaveLength(1);
+    });
+
     it('client-wins merge branch: widget stays suppressed even when the remote config returns a real widget object', async () => {
       vi.stubGlobal(
         'fetch',

@@ -202,7 +202,9 @@ export function applyDefaults(
     debug: {
       logToConsole: config.debug?.logToConsole ?? false,
     },
-    detect: config.detect ?? true,
+    // Detection defaults on only in hosted (SaaS) mode; standalone and
+    // self_hosted integrations opt in explicitly.
+    detect: config.detect ?? mode === 'hosted',
   };
 }
 
