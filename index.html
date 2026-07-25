@@ -806,30 +806,46 @@ window.LLMShare = ${configJson};
         return;
       }
 
-      const script = document.createElement('script');
-      script.src = './dist/widget.iife.js';
-      script.async = true;
-      script.onload = () => {
-        let attempts = 0;
-        const checkLoaded = setInterval(() => {
-          attempts++;
-          if (window.LLMShareWidget && window.LLMShareWidget.init) {
-            clearInterval(checkLoaded);
-            if (callback) callback();
-          } else if (attempts > 50) {
-            clearInterval(checkLoaded);
-            console.error('Widget bundle loaded but init function not available');
+      // Prefer a local build (`npm run build`) so contributors preview their
+      // own changes; fall back to the CDN, which is rebuilt from main on every
+      // push. dist/ is not committed, so on the hosted demo the local hit
+      // 404s and the CDN — always current — serves the bundle.
+      const sources = ['./dist/widget.iife.js', 'https://cdn.getsourced.ai/widget.iife.js'];
+
+      function attempt(index) {
+        if (index >= sources.length) {
+          console.error('Failed to load widget bundle from', sources.join(' and '));
+          const preview = document.getElementById('widget-preview');
+          if (preview) {
+            preview.innerHTML = '<p style="color: #d32f2f; margin: 0;">Failed to load widget bundle. Run <code>npm run build</code>, or check your connection to the CDN.</p>';
           }
-        }, 100);
-      };
-      script.onerror = () => {
-        console.error('Failed to load widget bundle from ./dist/widget.iife.js');
-        const preview = document.getElementById('widget-preview');
-        if (preview) {
-          preview.innerHTML = '<p style="color: #d32f2f; margin: 0;">Failed to load widget bundle. Make sure dist/widget.iife.js exists.</p>';
+          return;
         }
-      };
-      document.head.appendChild(script);
+
+        const script = document.createElement('script');
+        script.src = sources[index];
+        script.async = true;
+        script.onload = () => {
+          let attempts = 0;
+          const checkLoaded = setInterval(() => {
+            attempts++;
+            if (window.LLMShareWidget && window.LLMShareWidget.init) {
+              clearInterval(checkLoaded);
+              if (callback) callback();
+            } else if (attempts > 50) {
+              clearInterval(checkLoaded);
+              console.error('Widget bundle loaded but init function not available');
+            }
+          }, 100);
+        };
+        script.onerror = () => {
+          script.remove();
+          attempt(index + 1);
+        };
+        document.head.appendChild(script);
+      }
+
+      attempt(0);
     }
 
     function copyToClipboard(elementId, button) {
