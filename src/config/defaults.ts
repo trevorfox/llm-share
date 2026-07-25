@@ -153,6 +153,7 @@ export function applyDefaults(
         config.endpoints?.redirectBase ??
         defaultEndpoints.redirectBase ??
         null,
+      widgetConfig: config.endpoints?.widgetConfig ?? null,
     },
     widget: {
       placement: widgetConfig?.placement ?? 'bottom-left',
@@ -175,6 +176,7 @@ export function applyDefaults(
         position: widgetConfig?.textLabel?.position ?? 'top',
         hideDelay: widgetConfig?.textLabel?.hideDelay ?? 3000,
       },
+      customCSS: widgetConfig?.customCSS ?? '',
     },
     widgetEnabled,
     content: {
