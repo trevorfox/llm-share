@@ -91,13 +91,19 @@ export interface LLMShareConfig {
   publicKey?: string | null;
   mode?: WidgetMode;
   endpoints?: EndpointsConfig;
-  widget?: WidgetConfig;
+  // `false` suppresses ALL widget UI rendering while the tracker still
+  // initializes (see `detect`). Any other value is the usual appearance config.
+  widget?: WidgetConfig | false;
   content?: ContentConfig;
   action?: LLMAction;
   llms?: string[];
   tracking?: TrackingConfig;
   callbacks?: CallbacksConfig;
   debug?: DebugConfig;
+  // Fires a single `pageview` event (referrer + page URL, no client-side
+  // classification) through the existing event pipeline on init. Defaults
+  // to true so legacy configs pick it up automatically.
+  detect?: boolean;
 }
 
 export interface NormalizedLLMShareConfig {
@@ -107,10 +113,13 @@ export interface NormalizedLLMShareConfig {
   mode: WidgetMode;
   endpoints: Required<EndpointsConfig>;
   widget: Required<WidgetConfig>;
+  // Whether the widget UI should render (false when `widget: false` was set).
+  widgetEnabled: boolean;
   content: Required<ContentConfig>;
   llms: LLMConfig[];
   tracking: Required<TrackingConfig>;
   callbacks: Required<CallbacksConfig>;
   debug: Required<DebugConfig>;
+  detect: boolean;
 }
 

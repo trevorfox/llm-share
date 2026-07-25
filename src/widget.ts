@@ -23,20 +23,33 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
     }
   }
 
-  // Create event tracker
+  // Create event tracker (always initializes, even when the widget UI is
+  // suppressed via `widget: false` — the detect module's pageview event
+  // still needs it).
   const tracker = new EventTracker(normalizedConfig);
 
-  // Create and initialize widget
-  const widget = new Widget(normalizedConfig, tracker);
-  widget.init();
+  // Create and initialize widget UI, unless suppressed via `widget: false`.
+  let widget: Widget | null = null;
+  if (normalizedConfig.widgetEnabled) {
+    widget = new Widget(normalizedConfig, tracker);
+    widget.init();
+  }
 
-  // Expose widget instance for cleanup if needed
+  // Detect module: fire a single pageview event (referrer + page URL, no
+  // client-side classification) through the existing EventTracker pipeline.
+  // Respects the tracker's existing tracking-allowed / DNT logic exactly
+  // like every other event.
+  if (normalizedConfig.detect) {
+    tracker.trackPageview();
+  }
+
+  // Expose instance for cleanup if needed
   if (typeof window !== 'undefined') {
     window.__LLMShareInstance = {
       widget,
       tracker,
       destroy: () => {
-        widget.destroy();
+        widget?.destroy();
         tracker.destroy();
         delete window.__LLMShareInstance;
       },

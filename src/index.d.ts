@@ -68,7 +68,9 @@ export interface LLMShareConfig {
   publicKey?: string | null;
   mode?: WidgetMode;
   endpoints?: EndpointsConfig;
-  widget?: WidgetConfig;
+  // `false` suppresses ALL widget UI rendering while the tracker still
+  // initializes (see `detect`). Any other value is the usual appearance config.
+  widget?: WidgetConfig | false;
   content?: ContentConfig;
   action?: LLMAction;
   llms?: string[];
@@ -76,6 +78,10 @@ export interface LLMShareConfig {
   callbacks?: CallbacksConfig;
   debug?: DebugConfig;
   widgetUrl?: string; // For loader to override widget bundle URL
+  // Fires a single `pageview` event (referrer + page URL, no client-side
+  // classification) through the existing event pipeline on init. Defaults
+  // to true so legacy configs pick it up automatically.
+  detect?: boolean;
 }
 
 declare global {
@@ -86,7 +92,8 @@ declare global {
       initAsync?: (config?: LLMShareConfig) => Promise<void>;
     };
     __LLMShareInstance?: {
-      widget: Widget;
+      // null when `widget: false` suppressed widget rendering.
+      widget: Widget | null;
       tracker: EventTracker;
       destroy: () => void;
     };

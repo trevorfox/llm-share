@@ -7,7 +7,8 @@ export type EventType =
   | 'click'
   | 'share_created'
   | 'fallback_raw_url'
-  | 'error';
+  | 'error'
+  | 'pageview';
 
 export interface BaseEvent {
   event_id: string; // UUID v4
@@ -20,7 +21,7 @@ export interface BaseEvent {
   mode: 'hosted' | 'self_hosted' | 'standalone';
   metadata?: Record<string, unknown>;
   // Attribution data (browser-available data)
-  referrer?: string; // document.referrer (the page that referred the user)
+  referrer?: string | null; // document.referrer (the page that referred the user)
   language?: string; // navigator.language (e.g., "en-US")
   timezone?: string; // Intl.DateTimeFormat().resolvedOptions().timeZone (e.g., "America/Los_Angeles")
   screen_width?: number; // window.screen.width
@@ -57,10 +58,22 @@ export interface ErrorEvent extends BaseEvent {
   error_type?: string;
 }
 
+/**
+ * Detect-module pageview event: fired once on init (when `detect` is
+ * enabled and tracking is allowed) regardless of whether the widget UI
+ * renders. Reports referrer + page URL only — no classification happens
+ * client-side.
+ */
+export interface PageviewEvent extends BaseEvent {
+  event_type: 'pageview';
+  referrer: string | null;
+}
+
 export type LLMShareEvent =
   | ImpressionEvent
   | ClickEvent
   | ShareCreatedEvent
   | FallbackRawUrlEvent
-  | ErrorEvent;
+  | ErrorEvent
+  | PageviewEvent;
 

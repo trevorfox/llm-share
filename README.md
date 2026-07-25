@@ -156,7 +156,7 @@ window.LLMShare = {
   
   callbacks: {
     onEvent: (evt) => {
-      // Handle events: impression, click, share_created, fallback_raw_url, error
+      // Handle events: impression, click, share_created, fallback_raw_url, error, pageview
     },
     onReady: () => {
       // Widget initialized
@@ -179,6 +179,35 @@ window.LLMShare = {
   // Widget will use defaults for everything else
 };
 ```
+
+## Detection mode
+
+`detect` fires a single `pageview` event (page URL + referrer, plus the same
+attribution fields — language, timezone, screen/viewport — every other
+event carries) through the existing event pipeline on init. It defaults to
+`true`, so every existing integration picks it up automatically alongside
+the widget. It respects the same `tracking.enabled` / `tracking.respectDNT`
+rules as every other event — no separate consent path, no new transport.
+
+No classification happens client-side: the widget only reports what the
+browser already exposes (referrer + URL). Deciding whether a visit came
+from an AI assistant happens server-side, using that data.
+
+Set `widget: false` to suppress all widget UI rendering while detection
+(and event tracking generally) still runs — useful if you only want
+referrer analytics on a page without the "send to AI" buttons:
+
+```javascript
+window.LLMShare = {
+  siteId: "pub_123",
+  publicKey: "pk_abc",
+  detect: true,   // default; explicit here for clarity
+  widget: false   // no UI — just the pageview event
+};
+```
+
+To disable detection entirely (and keep only the widget's own
+impression/click events), set `detect: false`.
 
 ## Self-Hosting
 
