@@ -10,10 +10,16 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # id-token lets the runner mint the OIDC token npm trades for publish
+    # rights. No NPM_TOKEN: npm revoked classic/automation tokens in Dec 2025,
+    # and write-capable granular tokens now expire every 90 days.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -21,9 +27,11 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
           scope: '@trevorfox'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
+
+      # Trusted publishing needs npm >= 11.5.1; Node 22 still bundles npm 10.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
 
@@ -47,9 +55,8 @@ jobs:
           npm install -g vercel@latest
           vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
       
+      # Authenticates via OIDC against the trusted publisher configured on
+      # npmjs.com (user trevorfox / repo llm-share / this workflow filename).
       - name: Publish to npm (on tags)
         if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
