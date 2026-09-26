@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { init } from '../src/widget';
+import { init, initAsync } from '../src/widget';
+import { mergeConfigs } from '../src/config/api-config';
+import { applyDefaults } from '../src/config/defaults';
 import { isUUID } from '../src/utils/uuid';
 import type { LLMShareEvent } from '../src/events/types';
 import type { LLMShareConfig } from '../src/config/types';
@@ -150,6 +152,66 @@ describe('Visitor id, identify and consent', () => {
       (window as any).GetSourced = { _q: [['identify', [{ ref: 'early' }]]] };
       init(hostedConfig());
       expect(identifyCalls(fetchMock)[0]).toMatchObject({ ref: 'early' });
+    });
+  });
+
+  describe('review regressions', () => {
+    it('server config cannot grant consent, enable the id, or set identify over the page', () => {
+      const server = { consent: true, visitorId: true, endpoints: { identify: 'https://evil.test/i' }, overrideClientConfig: true } as LLMShareConfig;
+      const merged = mergeConfigs(server, { siteId: 's', consent: false, visitorId: false, endpoints: { identify: null } });
+      expect(merged.consent).toBe(false);
+      expect(merged.visitorId).toBe(false);
+      expect(merged.endpoints!.identify).toBeNull();
+    });
+
+    it('server config can revoke consent', () => {
+      const merged = mergeConfigs({ consent: false } as LLMShareConfig, { siteId: 's', consent: true });
+      expect(merged.consent).toBe(false);
+    });
+
+    it('treats non-boolean consent and visitorId values as false', () => {
+      const c = applyDefaults({ siteId: 's', consent: 'false' as any, visitorId: 'true' as any });
+      expect(c.consent).toBe(false);
+      expect(c.visitorId).toBe(false);
+    });
+
+    it('a queued consent("false") string does not grant consent', () => {
+      (window as any).GetSourced = { _q: [['consent', ['false']]] };
+      init(hostedConfig());
+      expect(readCookie('gs_vid')).toBeNull();
+    });
+
+    it('does not default identify to Sourced when events go to another collector', () => {
+      const c = applyDefaults({ siteId: 's', endpoints: { collector: 'https://mine.test/e' } });
+      expect(c.endpoints.identify).toBeNull();
+      expect(applyDefaults({ siteId: 's' }).endpoints.identify).toBe('https://www.getsourced.ai/v1/identify');
+    });
+
+    it('sends each identity once per page even when interleaved', () => {
+      init(hostedConfig());
+      window.GetSourced!.identify({ ref: 'a' });
+      window.GetSourced!.identify({ ref: 'b' });
+      window.GetSourced!.identify({ ref: 'a' });
+      expect(identifyCalls(fetchMock)).toHaveLength(2);
+    });
+
+    it('keeps a runtime consent(false) across destroy and re-init, and queues calls in between', () => {
+      init(hostedConfig());
+      window.GetSourced!.consent(false);
+      (window as any).__LLMShareInstance.destroy();
+      expect(() => window.GetSourced!.identify({ ref: 'between' })).not.toThrow();
+      init(hostedConfig());
+      expect(readCookie('gs_vid')).toBeNull();
+      expect(identifyCalls(fetchMock).map((b) => b.ref)).toContain('between');
+    });
+
+    it('concurrent async inits build one tracker and honor a queued consent(false)', async () => {
+      (window as any).GetSourced = { _q: [['consent', [false]]] };
+      const minimal = { siteId: 's1', publicKey: 'pk1', endpoints: { collector: 'https://collector.test/v1/events' } };
+      await Promise.all([initAsync(minimal), initAsync(minimal)]);
+      expect(readCookie('gs_vid')).toBeNull();
+      const configFetches = fetchMock.mock.calls.filter(([u]) => String(u).includes('widget-config'));
+      expect(configFetches).toHaveLength(1);
     });
   });
 

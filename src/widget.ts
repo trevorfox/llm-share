@@ -8,6 +8,7 @@ import { isMinimalConfig, fetchConfigFromAPI, mergeConfigs } from './config/api-
 import { EventTracker } from './events/tracker';
 import { Widget } from './ui/Widget';
 import { getDefaultIcon } from './icons';
+import { installGetSourcedStub } from './identity/stub';
 
 type QueuedCall = [string, unknown[]];
 
@@ -26,7 +27,7 @@ function createTrackerWithApi(config: NormalizedLLMShareConfig): EventTracker {
   let consent = config.consent;
   for (const [method, args] of queued) {
     if (method === 'consent') {
-      consent = Boolean(args[0]);
+      consent = args[0] === true;
     }
   }
 
@@ -35,7 +36,7 @@ function createTrackerWithApi(config: NormalizedLLMShareConfig): EventTracker {
   if (typeof window !== 'undefined') {
     window.GetSourced = {
       identify: (input) => tracker.identify(input),
-      consent: (granted) => tracker.setConsent(Boolean(granted)),
+      consent: (granted) => tracker.setConsent(granted === true),
       getVisitorId: () => tracker.getVisitorId(),
     };
   }
@@ -92,7 +93,14 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
         widget?.destroy();
         tracker.destroy();
         delete window.__LLMShareInstance;
+        // Back to a queuing stub, carrying a consent choice made at runtime
+        // so a re-init (e.g. an SPA remount) does not undo it.
         delete window.GetSourced;
+        const stub = installGetSourcedStub();
+        const runtimeConsent = tracker.getRuntimeConsent();
+        if (runtimeConsent !== null) {
+          stub._q!.push(['consent', [runtimeConsent]]);
+        }
       },
     };
     // Clear loading flag now that we're initialized
@@ -103,11 +111,24 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
 /**
  * Initialize widget (async version that can fetch config from API)
  */
+let pendingInit: Promise<void> | null = null;
+
 export async function initAsync(config?: LLMShareConfig): Promise<void> {
-  // Prevent double initialization
+  // Prevent double initialization, including a second call while the first
+  // is still awaiting remote config.
   if (typeof window !== 'undefined' && window.__LLMShareInstance) {
     return;
   }
+  if (pendingInit) {
+    return pendingInit;
+  }
+  pendingInit = runInitAsync(config).finally(() => {
+    pendingInit = null;
+  });
+  return pendingInit;
+}
+
+async function runInitAsync(config?: LLMShareConfig): Promise<void> {
 
   // Get config from window or parameter
   let inlineConfig: LLMShareConfig | null = null;

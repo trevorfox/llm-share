@@ -89,6 +89,22 @@ export function findCookieDomain(hostname: string, doc: CookieDoc): string | nul
   return null;
 }
 
+/**
+ * Every domain a gs_vid cookie could have been set on, for deletion
+ * without probing (probing writes a cookie, which cookieless mode must not).
+ */
+function candidateDomains(hostname: string): string[] {
+  if (isIPOrBareHost(hostname)) {
+    return [];
+  }
+  const labels = hostname.split('.');
+  const out: string[] = [];
+  for (let i = 2; i <= labels.length; i++) {
+    out.push(labels.slice(-i).join('.'));
+  }
+  return out;
+}
+
 export interface VisitorIdOptions {
   hostname: string;
   secure: boolean;
@@ -183,12 +199,12 @@ export class VisitorId {
   }
 
   private clearStored(): void {
-    if (this.doc) {
-      const domain = this.domain();
-      writeCookie(this.doc, VISITOR_KEY, '', domain, 0, this.secure);
-      if (domain) {
-        // A host-only copy could exist from a page where probing failed.
-        writeCookie(this.doc, VISITOR_KEY, '', null, 0, this.secure);
+    // Only deletions: a Max-Age=0 write on a domain with no cookie (or on
+    // a public suffix the browser refuses) is a no-op, and a host-only copy
+    // could exist from a page where probing failed.
+    if (this.doc && this.doc.cookie.includes(`${VISITOR_KEY}=`)) {
+      for (const domain of [...candidateDomains(this.hostname), null]) {
+        writeCookie(this.doc, VISITOR_KEY, '', domain, 0, this.secure);
       }
     }
     try {

@@ -36,7 +36,8 @@ export class EventTracker {
   private flushTimer: number | null = null;
   private unloadHandler: (() => void) | null = null;
   private visitor: VisitorId | null = null;
-  private lastIdentifyKey: string | null = null;
+  private sentIdentities = new Set<string>();
+  private runtimeConsent: boolean | null = null;
 
   constructor(config: NormalizedLLMShareConfig, options: EventTrackerOptions = {}) {
     this.config = config;
@@ -92,7 +93,15 @@ export class EventTracker {
    * Switch cookieless mode on (false) or off (true)
    */
   setConsent(consent: boolean): void {
+    this.runtimeConsent = consent;
     this.visitor?.setConsent(this.effectiveConsent(consent));
+  }
+
+  /**
+   * The last consent value set at runtime, or null if none was
+   */
+  getRuntimeConsent(): boolean | null {
+    return this.runtimeConsent;
   }
 
   /**
@@ -109,10 +118,10 @@ export class EventTracker {
       return;
     }
     const key = JSON.stringify(payload);
-    if (key === this.lastIdentifyKey) {
+    if (this.sentIdentities.has(key)) {
       return;
     }
-    this.lastIdentifyKey = key;
+    this.sentIdentities.add(key);
 
     const visitorId = this.getVisitorId();
     const body = JSON.stringify({

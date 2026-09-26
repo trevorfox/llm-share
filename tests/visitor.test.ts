@@ -173,6 +173,22 @@ describe('VisitorId', () => {
       expect(doc.writes.some((w) => w.startsWith(`${VISITOR_KEY}=${v.get()}`))).toBe(false);
     });
 
+    it('writes no cookie at all (not even a probe) when there is nothing to delete', () => {
+      const doc = fakeDoc(host);
+      new VisitorId({ hostname: host, secure: true, doc, storage: fakeStorage(), consent: false });
+      expect(doc.writes).toEqual([]);
+    });
+
+    it('only issues deletions when clearing an existing cookie', () => {
+      const doc = fakeDoc('www.shop.co.uk');
+      doc.cookie = `${VISITOR_KEY}=${UUID_A}; Domain=shop.co.uk`;
+      doc.writes.length = 0;
+      new VisitorId({ hostname: 'www.shop.co.uk', secure: true, doc, storage: fakeStorage(), consent: false });
+      expect(doc.writes.length).toBeGreaterThan(0);
+      expect(doc.writes.every((w) => w.includes('Max-Age=0'))).toBe(true);
+      expect(doc.cookie).toBe('');
+    });
+
     it('consent(false) at runtime deletes storage and switches to a fresh id', () => {
       const doc = fakeDoc(host);
       const storage = fakeStorage();

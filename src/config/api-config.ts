@@ -79,6 +79,41 @@ export function mergeConfigs(
   if (!apiConfig) {
     return inlineConfig;
   }
+  return applyPrivacyPrecedence(mergeByPrecedence(apiConfig, inlineConfig), apiConfig, inlineConfig);
+}
+
+/**
+ * Privacy settings are not subject to `overrideClientConfig`: the page's
+ * own consent state and opt-outs always stand, whichever side won the
+ * merge. Either side can revoke consent; only the page can grant it.
+ */
+function applyPrivacyPrecedence(
+  merged: LLMShareConfig,
+  apiConfig: LLMShareConfig,
+  inlineConfig: LLMShareConfig
+): LLMShareConfig {
+  const result: LLMShareConfig = { ...merged };
+  if (apiConfig.consent === false) {
+    result.consent = false;
+  } else if (inlineConfig.consent !== undefined) {
+    result.consent = inlineConfig.consent;
+  } else {
+    // The server can revoke consent but never grant it.
+    delete result.consent;
+  }
+  if (inlineConfig.visitorId !== undefined) {
+    result.visitorId = inlineConfig.visitorId;
+  }
+  if (inlineConfig.endpoints && 'identify' in inlineConfig.endpoints) {
+    result.endpoints = { ...merged.endpoints, identify: inlineConfig.endpoints.identify };
+  }
+  return result;
+}
+
+function mergeByPrecedence(
+  apiConfig: LLMShareConfig,
+  inlineConfig: LLMShareConfig
+): LLMShareConfig {
 
   // Check if server wants to override client config
   const overrideClientConfig = (apiConfig as LLMShareConfig & { overrideClientConfig?: boolean }).overrideClientConfig === true;

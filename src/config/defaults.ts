@@ -157,7 +157,15 @@ export function applyDefaults(
         defaultEndpoints.redirectBase ??
         null,
       widgetConfig: config.endpoints?.widgetConfig ?? null,
-      identify: config.endpoints?.identify ?? defaultEndpoints.identify,
+      // Identify goes to Sourced only when events do: a page that routes its
+      // collector elsewhere never sends emails to the hosted endpoint.
+      identify:
+        config.endpoints?.identify !== undefined
+          ? config.endpoints.identify
+          : config.endpoints?.collector &&
+              config.endpoints.collector !== defaultEndpoints.collector
+            ? null
+            : defaultEndpoints.identify,
     },
     widget: {
       placement: widgetConfig?.placement ?? 'bottom-left',
@@ -216,8 +224,10 @@ export function applyDefaults(
     detect: config.detect ?? mode === 'hosted',
     // Like detect: a cookie by default only for hosted (SaaS) installs, so
     // an open-source share button never starts setting one on upgrade.
-    visitorId: config.visitorId ?? mode === 'hosted',
-    consent: config.consent ?? true,
+    // Only a real boolean `true` turns persistence on; a stray string such
+    // as "false" from a templated config must not.
+    visitorId: config.visitorId === undefined ? mode === 'hosted' : config.visitorId === true,
+    consent: config.consent === undefined ? true : config.consent === true,
   };
 }
 
