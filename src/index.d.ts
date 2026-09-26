@@ -25,6 +25,8 @@ export interface EndpointsConfig {
   collector?: string | null;
   share?: string | null;
   redirectBase?: string | null;
+  widgetConfig?: string | null;
+  identify?: string | null;
 }
 
 export interface WidgetConfig {
@@ -82,6 +84,23 @@ export interface LLMShareConfig {
   // classification) through the existing event pipeline on init. Defaults
   // to true so legacy configs pick it up automatically.
   detect?: boolean;
+  // Persist `gs_vid` and send it as `visitor_id` (default: hosted mode only).
+  visitorId?: boolean;
+  // `false` = cookieless mode (default: true).
+  consent?: boolean;
+}
+
+export interface IdentifyInput {
+  ref?: string;
+  email?: string;
+}
+
+export interface GetSourcedAPI {
+  identify: (input: IdentifyInput) => void;
+  consent: (granted: boolean) => void;
+  getVisitorId: () => string | null;
+  // Calls queued by the loader stub before the bundle loaded.
+  _q?: Array<[string, unknown[]]>;
 }
 
 declare global {
@@ -100,6 +119,7 @@ declare global {
     __LLMShareQueue?: Array<() => void>;
     __LLMShareInitialized?: boolean;
     __LLMShareLoading?: boolean;
+    GetSourced?: GetSourcedAPI;
   }
 }
 

@@ -217,6 +217,57 @@ fetches remote widget-config before the pageview fires (one extra request
 per load; very fast bounces may be missed). Set `mode: "self_hosted"` or
 `endpoints.widgetConfig` to skip or redirect that fetch.
 
+## Visitor id, identify and consent
+
+In `hosted` mode the snippet keeps a visitor id, `gs_vid`: a UUID stored in a
+first-party cookie on your registrable domain (so `www.example.com` and
+`app.example.com` share it), mirrored to `localStorage` as a fallback. It is
+sent as `visitor_id` on every event. Standalone and self-hosted installs opt
+in with `visitorId: true`; with it off, no cookie is set and events carry no
+`visitor_id`.
+
+The registrable domain is found without a public-suffix list: the snippet
+probes with a short-lived cookie from the shortest candidate domain upward and
+keeps the first one the browser accepts. `localhost` and IP addresses get a
+host-only cookie. The cookie is `Path=/; SameSite=Lax`, `Secure` on https, and
+its 400-day expiry is refreshed on each load.
+
+```javascript
+// Tie the visitor to your user id and/or email (nothing else is accepted).
+GetSourced.identify({ ref: user.id, email: user.email });
+
+// Cookieless mode: removes gs_vid and uses an in-memory id for this page.
+GetSourced.consent(false);
+// Persist again once your consent manager says yes.
+GetSourced.consent(true);
+
+// The current id, e.g. to pass along as ?vid= (null when the id is off).
+GetSourced.getVisitorId();
+```
+
+- `consent: false` in the config starts the page in cookieless mode. The
+  snippet does not remember the choice, so pass your consent manager's current
+  state on every load. Do Not Track (with `tracking.respectDNT`, the default)
+  also means cookieless.
+- `identify` sends `ref` (at most 256 characters) and `email` (trimmed and
+  lowercased) once per page load. It never stores them on the device. It works
+  in cookieless mode and obeys the same tracking and DNT rules as events.
+- Remote widget-config can never grant consent, turn on `visitorId`, or
+  replace your `endpoints.identify`, even with `overrideClientConfig`. Only a
+  boolean `true` counts as consent.
+- In hosted mode `identify` posts to `https://www.getsourced.ai/v1/identify`,
+  unless you point `endpoints.collector` elsewhere. Then it defaults to null.
+- Calls made before the bundle loads are queued by the loader and replayed
+  on init. A queued `consent(false)` is applied before any cookie is written.
+  Without the loader, install the same stub yourself:
+
+```javascript
+window.GetSourced = window.GetSourced || { _q: [] };
+['identify', 'consent'].forEach(function (m) {
+  GetSourced[m] = GetSourced[m] || function () { GetSourced._q.push([m, [].slice.call(arguments)]); };
+});
+```
+
 ## Self-Hosting
 
 llm-share is backend-agnostic. By default (`mode: "hosted"`) it talks to the hosted GetSourced collector, but `mode: "self_hosted"` plus the `endpoints` config points the widget at any backend that implements this three-endpoint contract:
@@ -238,6 +289,10 @@ Responses: `200 {"success": true, "inserted": n}`; `400` on validation errors (1
 **`POST {share}`** — create a tracked share link. Request: `{"url", "site_id", "public_key", "llm_id", "page_title?", "view_id?"}`. Response: `201 {"token", "slug", "share_url", "redirect_base"}`.
 
 **`GET {redirectBase}{token}/{slug?}`** — resolve a share link: logs a `resolve` event and `302`s to the destination URL. Unknown/expired tokens return `404`.
+
+Events carry `"visitor_id": "<uuid>"` when the visitor id is on (see above).
+
+**`POST {identify}`** (optional; set `endpoints.identify`, default null outside hosted mode) — receives `GetSourced.identify()`. Request: `{"site_id", "public_key", "visitor_id?", "ref?", "email?", "ts", "page_url"}`. The response is ignored.
 
 There is also an optional remote-config endpoint (`GET /api/v1/widget-config?siteId=…&publicKey=…`) that returns a config object merged as `{siteId, publicKey, mode, …widget_config}` — useful when you want server-managed widget settings.
 

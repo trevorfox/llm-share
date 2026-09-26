@@ -17,6 +17,7 @@ export interface BaseEvent {
   site_id?: string | null;
   page_url: string;
   view_id: string; // UUID v4 generated client-side per page load
+  visitor_id?: string; // gs_vid; absent when the visitor id is off
   llm_id?: string; // e.g. "chatgpt", "claude"
   mode: 'hosted' | 'self_hosted' | 'standalone';
   metadata?: Record<string, unknown>;

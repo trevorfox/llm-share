@@ -10,6 +10,21 @@ import type {
 } from './types';
 import type { NormalizedLLMShareConfig } from '../config/types';
 import { generateUUID } from '../utils/uuid';
+import { VisitorId } from '../identity/visitor';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_REF_LENGTH = 256;
+
+export interface IdentifyInput {
+  ref?: string;
+  email?: string;
+}
+
+export interface EventTrackerOptions {
+  // Initial consent, overriding config.consent (e.g. a queued
+  // GetSourced.consent() call made before the bundle loaded).
+  consent?: boolean;
+}
 
 /**
  * Event tracker - handles event creation, batching, and sending
@@ -20,11 +35,153 @@ export class EventTracker {
   private eventQueue: LLMShareEvent[] = [];
   private flushTimer: number | null = null;
   private unloadHandler: (() => void) | null = null;
+  private visitor: VisitorId | null = null;
+  private sentIdentities = new Set<string>();
+  private runtimeConsent: boolean | null = null;
 
-  constructor(config: NormalizedLLMShareConfig) {
+  constructor(config: NormalizedLLMShareConfig, options: EventTrackerOptions = {}) {
     this.config = config;
     this.viewId = generateUUID();
+    this.visitor = this.createVisitor(options.consent ?? config.consent);
     this.setupUnloadHandler();
+  }
+
+  /**
+   * The visitor id is only kept where events could be sent: the feature is
+   * on and tracking is allowed on this domain.
+   */
+  private createVisitor(consent: boolean): VisitorId | null {
+    if (!this.config.visitorId || !this.isTrackingAllowed() || typeof window === 'undefined') {
+      return null;
+    }
+    let storage: Storage | null = null;
+    try {
+      storage = window.localStorage ?? null;
+    } catch {
+      // Accessing localStorage throws when storage is blocked.
+    }
+    return new VisitorId({
+      hostname: window.location.hostname,
+      secure: window.location.protocol === 'https:',
+      doc: typeof document !== 'undefined' ? document : null,
+      storage,
+      consent: this.effectiveConsent(consent),
+    });
+  }
+
+  private isDNT(): boolean {
+    return (
+      this.config.tracking.respectDNT &&
+      typeof navigator !== 'undefined' &&
+      navigator.doNotTrack === '1'
+    );
+  }
+
+  // Do Not Track behaves like revoked consent: nothing persisted.
+  private effectiveConsent(consent: boolean): boolean {
+    return consent && !this.isDNT();
+  }
+
+  /**
+   * Current visitor id, or null when the visitor id is off
+   */
+  getVisitorId(): string | null {
+    return this.visitor ? this.visitor.get() : null;
+  }
+
+  /**
+   * Switch cookieless mode on (false) or off (true)
+   */
+  setConsent(consent: boolean): void {
+    this.runtimeConsent = consent;
+    this.visitor?.setConsent(this.effectiveConsent(consent));
+  }
+
+  /**
+   * The last consent value set at runtime, or null if none was
+   */
+  getRuntimeConsent(): boolean | null {
+    return this.runtimeConsent;
+  }
+
+  /**
+   * Tie this visitor to the tenant's user id and/or email. Only `ref` and
+   * `email` are accepted; anything else is dropped. Fire and forget.
+   */
+  identify(input: IdentifyInput): void {
+    const payload = this.normalizeIdentify(input);
+    if (!payload) {
+      return;
+    }
+    const endpoint = this.config.endpoints.identify;
+    if (!endpoint || !this.isTrackingAllowed() || this.isDNT()) {
+      return;
+    }
+    const key = JSON.stringify(payload);
+    if (this.sentIdentities.has(key)) {
+      return;
+    }
+    this.sentIdentities.add(key);
+
+    const visitorId = this.getVisitorId();
+    const body = JSON.stringify({
+      site_id: this.config.siteId,
+      public_key: this.config.publicKey,
+      ...(visitorId ? { visitor_id: visitorId } : {}),
+      ...payload,
+      ts: new Date().toISOString(),
+      page_url: typeof window !== 'undefined' ? window.location.href : '',
+    });
+    try {
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      }).catch((error) => {
+        if (this.config.debug.logToConsole) {
+          console.error('[LLMShare] identify failed:', error);
+        }
+      });
+    } catch (error) {
+      if (this.config.debug.logToConsole) {
+        console.error('[LLMShare] identify failed:', error);
+      }
+    }
+  }
+
+  private normalizeIdentify(input: unknown): { ref?: string; email?: string } | null {
+    const warn = (msg: string) => {
+      if (this.config.debug.logToConsole) {
+        console.warn(`[LLMShare] identify ignored: ${msg}`);
+      }
+    };
+    if (!input || typeof input !== 'object') {
+      warn('expected { ref, email }');
+      return null;
+    }
+    const { ref, email } = input as Record<string, unknown>;
+    const out: { ref?: string; email?: string } = {};
+    if (typeof ref === 'string' && ref.trim()) {
+      if (ref.trim().length > MAX_REF_LENGTH) {
+        warn(`ref longer than ${MAX_REF_LENGTH} characters`);
+        return null;
+      }
+      out.ref = ref.trim();
+    }
+    if (typeof email === 'string' && email.trim()) {
+      const normalized = email.trim().toLowerCase();
+      if (!EMAIL_RE.test(normalized)) {
+        warn('email is not an address');
+        return null;
+      }
+      out.email = normalized;
+    }
+    if (!out.ref && !out.email) {
+      warn('needs ref or email');
+      return null;
+    }
+    return out;
   }
 
   /**
@@ -106,6 +263,7 @@ export class EventTracker {
       site_id: this.config.siteId || null,
       page_url: typeof window !== 'undefined' ? window.location.href : '',
       view_id: this.viewId,
+      ...(this.visitor ? { visitor_id: this.visitor.get() } : {}),
       mode: this.config.mode,
       ...this.getAttributionData(),
     };
@@ -281,11 +439,7 @@ export class EventTracker {
     }
 
     // Check DNT if enabled
-    if (
-      this.config.tracking.respectDNT &&
-      typeof navigator !== 'undefined' &&
-      navigator.doNotTrack === '1'
-    ) {
+    if (this.isDNT()) {
       this.eventQueue = [];
       return;
     }

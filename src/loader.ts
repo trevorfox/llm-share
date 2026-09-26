@@ -3,6 +3,8 @@
  * Must be < 2KB minified + gzipped
  */
 
+import { installGetSourcedStub } from './identity/stub';
+
 // Version is injected at build time via Vite define
 declare const __VERSION__: string;
 
@@ -16,6 +18,10 @@ declare const __VERSION__: string;
     console.warn('[LLMShare] No config found. Please set window.LLMShare');
     return;
   }
+
+  // GetSourced API stub: queue identify/consent calls made before the
+  // bundle loads; the bundle replays them on init.
+  installGetSourcedStub();
 
   // Determine widget bundle URL
   // Default to versioned CDN URL, but can be overridden via config.widgetUrl

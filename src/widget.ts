@@ -8,6 +8,47 @@ import { isMinimalConfig, fetchConfigFromAPI, mergeConfigs } from './config/api-
 import { EventTracker } from './events/tracker';
 import { Widget } from './ui/Widget';
 import { getDefaultIcon } from './icons';
+import { installGetSourcedStub } from './identity/stub';
+
+type QueuedCall = [string, unknown[]];
+
+/**
+ * Install `window.GetSourced` and replay calls the loader stub queued
+ * before the bundle loaded. The last queued consent value is applied
+ * before the visitor id is created, so a queued `consent(false)` never
+ * lets a cookie be written.
+ */
+function createTrackerWithApi(config: NormalizedLLMShareConfig): EventTracker {
+  const queued: QueuedCall[] =
+    typeof window !== 'undefined' && Array.isArray(window.GetSourced?._q)
+      ? window.GetSourced!._q!
+      : [];
+
+  let consent = config.consent;
+  for (const [method, args] of queued) {
+    if (method === 'consent') {
+      consent = args[0] === true;
+    }
+  }
+
+  const tracker = new EventTracker(config, { consent });
+
+  if (typeof window !== 'undefined') {
+    window.GetSourced = {
+      identify: (input) => tracker.identify(input),
+      consent: (granted) => tracker.setConsent(granted === true),
+      getVisitorId: () => tracker.getVisitorId(),
+    };
+  }
+
+  for (const [method, args] of queued) {
+    if (method === 'identify') {
+      tracker.identify(args[0] as Parameters<EventTracker['identify']>[0]);
+    }
+  }
+
+  return tracker;
+}
 
 /**
  * Internal function to initialize widget with normalized config
@@ -26,7 +67,7 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
   // Create event tracker (always initializes, even when the widget UI is
   // suppressed via `widget: false` — the detect module's pageview event
   // still needs it).
-  const tracker = new EventTracker(normalizedConfig);
+  const tracker = createTrackerWithApi(normalizedConfig);
 
   // Create and initialize widget UI, unless suppressed via `widget: false`.
   let widget: Widget | null = null;
@@ -52,6 +93,14 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
         widget?.destroy();
         tracker.destroy();
         delete window.__LLMShareInstance;
+        // Back to a queuing stub, carrying a consent choice made at runtime
+        // so a re-init (e.g. an SPA remount) does not undo it.
+        delete window.GetSourced;
+        const stub = installGetSourcedStub();
+        const runtimeConsent = tracker.getRuntimeConsent();
+        if (runtimeConsent !== null) {
+          stub._q!.push(['consent', [runtimeConsent]]);
+        }
       },
     };
     // Clear loading flag now that we're initialized
@@ -62,11 +111,24 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
 /**
  * Initialize widget (async version that can fetch config from API)
  */
+let pendingInit: Promise<void> | null = null;
+
 export async function initAsync(config?: LLMShareConfig): Promise<void> {
-  // Prevent double initialization
+  // Prevent double initialization, including a second call while the first
+  // is still awaiting remote config.
   if (typeof window !== 'undefined' && window.__LLMShareInstance) {
     return;
   }
+  if (pendingInit) {
+    return pendingInit;
+  }
+  pendingInit = runInitAsync(config).finally(() => {
+    pendingInit = null;
+  });
+  return pendingInit;
+}
+
+async function runInitAsync(config?: LLMShareConfig): Promise<void> {
 
   // Get config from window or parameter
   let inlineConfig: LLMShareConfig | null = null;
