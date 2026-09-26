@@ -252,6 +252,11 @@ GetSourced.getVisitorId();
 - `identify` sends `ref` (at most 256 characters) and `email` (trimmed and
   lowercased) once per page load. It never stores them on the device. It works
   in cookieless mode and obeys the same tracking and DNT rules as events.
+- Remote widget-config can never grant consent, turn on `visitorId`, or
+  replace your `endpoints.identify`, even with `overrideClientConfig`. Only a
+  boolean `true` counts as consent.
+- In hosted mode `identify` posts to `https://www.getsourced.ai/v1/identify`,
+  unless you point `endpoints.collector` elsewhere. Then it defaults to null.
 - Calls made before the bundle loads are queued by the loader and replayed
   on init. A queued `consent(false)` is applied before any cookie is written.
   Without the loader, install the same stub yourself:
