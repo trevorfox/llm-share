@@ -100,6 +100,7 @@ function getDefaultEndpoints(mode: WidgetMode): {
   collector: string | null;
   share: string | null;
   redirectBase: string | null;
+  identify: string | null;
 } {
   if (mode === 'hosted') {
     // Default to your SaaS endpoints (can be overridden)
@@ -107,12 +108,14 @@ function getDefaultEndpoints(mode: WidgetMode): {
       collector: 'https://www.getsourced.ai/v1/events',
       share: 'https://www.getsourced.ai/v1/share',
       redirectBase: 'https://t.getsourced.ai/s/',
+      identify: 'https://www.getsourced.ai/v1/identify',
     };
   }
   return {
     collector: null,
     share: null,
     redirectBase: null,
+    identify: null,
   };
 }
 
@@ -154,6 +157,7 @@ export function applyDefaults(
         defaultEndpoints.redirectBase ??
         null,
       widgetConfig: config.endpoints?.widgetConfig ?? null,
+      identify: config.endpoints?.identify ?? defaultEndpoints.identify,
     },
     widget: {
       placement: widgetConfig?.placement ?? 'bottom-left',
@@ -210,6 +214,10 @@ export function applyDefaults(
     // Detection defaults on only in hosted (SaaS) mode; standalone and
     // self_hosted integrations opt in explicitly.
     detect: config.detect ?? mode === 'hosted',
+    // Like detect: a cookie by default only for hosted (SaaS) installs, so
+    // an open-source share button never starts setting one on upgrade.
+    visitorId: config.visitorId ?? mode === 'hosted',
+    consent: config.consent ?? true,
   };
 }
 

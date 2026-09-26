@@ -17,6 +17,14 @@ declare const __VERSION__: string;
     return;
   }
 
+  // GetSourced API stub: queue identify/consent calls made before the
+  // bundle loads; the bundle replays them on init.
+  const gs = (window.GetSourced = window.GetSourced || ({} as NonNullable<Window['GetSourced']>));
+  const calls = (gs._q = gs._q || []);
+  gs.identify = gs.identify || ((...args: unknown[]) => void calls.push(['identify', args]));
+  gs.consent = gs.consent || ((...args: unknown[]) => void calls.push(['consent', args]));
+  gs.getVisitorId = gs.getVisitorId || (() => null);
+
   // Determine widget bundle URL
   // Default to versioned CDN URL, but can be overridden via config.widgetUrl
   const version = typeof __VERSION__ !== 'undefined' ? __VERSION__ : '1.0.0';

@@ -9,6 +9,46 @@ import { EventTracker } from './events/tracker';
 import { Widget } from './ui/Widget';
 import { getDefaultIcon } from './icons';
 
+type QueuedCall = [string, unknown[]];
+
+/**
+ * Install `window.GetSourced` and replay calls the loader stub queued
+ * before the bundle loaded. The last queued consent value is applied
+ * before the visitor id is created, so a queued `consent(false)` never
+ * lets a cookie be written.
+ */
+function createTrackerWithApi(config: NormalizedLLMShareConfig): EventTracker {
+  const queued: QueuedCall[] =
+    typeof window !== 'undefined' && Array.isArray(window.GetSourced?._q)
+      ? window.GetSourced!._q!
+      : [];
+
+  let consent = config.consent;
+  for (const [method, args] of queued) {
+    if (method === 'consent') {
+      consent = Boolean(args[0]);
+    }
+  }
+
+  const tracker = new EventTracker(config, { consent });
+
+  if (typeof window !== 'undefined') {
+    window.GetSourced = {
+      identify: (input) => tracker.identify(input),
+      consent: (granted) => tracker.setConsent(Boolean(granted)),
+      getVisitorId: () => tracker.getVisitorId(),
+    };
+  }
+
+  for (const [method, args] of queued) {
+    if (method === 'identify') {
+      tracker.identify(args[0] as Parameters<EventTracker['identify']>[0]);
+    }
+  }
+
+  return tracker;
+}
+
 /**
  * Internal function to initialize widget with normalized config
  */
@@ -26,7 +66,7 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
   // Create event tracker (always initializes, even when the widget UI is
   // suppressed via `widget: false` — the detect module's pageview event
   // still needs it).
-  const tracker = new EventTracker(normalizedConfig);
+  const tracker = createTrackerWithApi(normalizedConfig);
 
   // Create and initialize widget UI, unless suppressed via `widget: false`.
   let widget: Widget | null = null;
@@ -52,6 +92,7 @@ function initializeWidget(normalizedConfig: NormalizedLLMShareConfig): void {
         widget?.destroy();
         tracker.destroy();
         delete window.__LLMShareInstance;
+        delete window.GetSourced;
       },
     };
     // Clear loading flag now that we're initialized

@@ -33,6 +33,7 @@ export interface EndpointsConfig {
   share?: string | null;
   redirectBase?: string | null;
   widgetConfig?: string | null; // Optional: custom API endpoint for fetching widget config
+  identify?: string | null; // Where GetSourced.identify() posts; null disables it
 }
 
 export type InlineAlignment = 'left' | 'center' | 'right';
@@ -104,6 +105,13 @@ export interface LLMShareConfig {
   // classification) through the existing event pipeline on init. Defaults
   // to true so legacy configs pick it up automatically.
   detect?: boolean;
+  // Persist a visitor id (`gs_vid` cookie on the registrable domain, with a
+  // localStorage fallback) and send it as `visitor_id` on every event.
+  // Defaults to true in hosted mode only.
+  visitorId?: boolean;
+  // `false` is cookieless mode: the visitor id lives in memory for the page
+  // load and nothing is written to the device. Defaults to true.
+  consent?: boolean;
 }
 
 export interface NormalizedLLMShareConfig {
@@ -121,5 +129,7 @@ export interface NormalizedLLMShareConfig {
   callbacks: Required<CallbacksConfig>;
   debug: Required<DebugConfig>;
   detect: boolean;
+  visitorId: boolean;
+  consent: boolean;
 }
 

@@ -25,6 +25,7 @@ claude --plugin-dir ../getsourced-knowledge
 | `/features/event-collector-api` | the `/v1` contract this package speaks |
 | `/features/detect-module` | detect semantics and defaults |
 | `/features/remote-widget-config` | when the widget fetches config, and `mergeConfigs` precedence |
+| `/features/visitor-id-spine` | `gs_vid`, `visitor_id` on events, `GetSourced.identify` / `consent` |
 
 **Description-grade:** `/features/llm-share-widget`, `/features/widget-builder`.
 Context, not contract.
